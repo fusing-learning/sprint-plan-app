@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Neutral, Linear-inspired light palette */
+    --background: 240 5% 96%;
+    --surface: 0 0% 100%;
+    --foreground: 240 10% 12%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
+    --border: 240 6% 91%;
+    --input: 240 6% 88%;
+    --ring: 235 56% 60%;
+    --primary: 235 56% 58%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 235 70% 97%;
+    --accent-foreground: 235 50% 42%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    color-scheme: light;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans text-[13.5px] leading-normal overflow-hidden;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring/60 ring-offset-1 ring-offset-background;
+  }
+
+  ::selection {
+    @apply bg-indigo-100;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+}
