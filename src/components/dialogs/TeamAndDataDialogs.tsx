@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { format } from 'date-fns';
-import { AlertTriangle, Download, FileUp, HardDrive, RotateCcw, Trash2, UserPlus, X } from 'lucide-react';
+import { AlertTriangle, Download, FileUp, HardDrive, Radio, RotateCcw, Trash2, UserPlus, X } from 'lucide-react';
 import { parseBackup } from '@/domain/backup';
 import type { AppData } from '@/domain/types';
-import { report, useData, useStore, useUi } from '@/state/react';
+import { report, useData, useStore, useStoreState, useUi } from '@/state/react';
 import { sortedMembers } from '@/state/selectors';
 import { Avatar } from '../meta';
 import { Button } from '../ui/button';
@@ -112,6 +112,7 @@ export function TeamDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 
 export function DataDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const data = useData();
+  const shared = useStoreState().connection !== 'local';
   const store = useStore();
   const ui = useUi();
   /** After the whole workspace is replaced, old filters would only hide things. */
@@ -197,10 +198,16 @@ export function DataDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         </DialogHeader>
         <DialogBody className="space-y-3 pb-4">
           <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-3 text-[12.5px] text-muted-foreground">
-            <HardDrive className="mt-0.5 size-4 shrink-0" />
-            <p>
-              Data is saved automatically in this browser’s local storage (IndexedDB) on this device. It does <strong className="text-foreground">not</strong> sync across computers or browsers — use export/import to move it.
-            </p>
+            {shared ? <Radio className="mt-0.5 size-4 shrink-0" /> : <HardDrive className="mt-0.5 size-4 shrink-0" />}
+            {shared ? (
+              <p>
+                This is a <strong className="text-foreground">shared workspace</strong> saved on the SprintFlow server. Everyone connected sees changes live, so importing, clearing or loading demo data replaces the plan for the whole team.
+              </p>
+            ) : (
+              <p>
+                Data is saved automatically in this browser’s local storage (IndexedDB) on this device. It does <strong className="text-foreground">not</strong> sync across computers or browsers — use export/import to move it.
+              </p>
+            )}
           </div>
 
           <ActionRow icon={<Download />} title="Export all data" body={`${data.projects.length} projects · ${data.tickets.length} tasks · ${data.sprints.length} sprints`}>

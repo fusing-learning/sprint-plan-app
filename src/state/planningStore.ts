@@ -1,5 +1,5 @@
 import { applyChanges } from '@/data/applyChanges';
-import type { PlanningRepository } from '@/data/repository';
+import type { ConnectionStatus, PlanningRepository, RemoteEvent } from '@/data/repository';
 import { createDemoData, createEmptyWorkspace, makeStarterSprint } from '@/data/seed';
 import { createBackup, type BackupFile } from '@/domain/backup';
 import {
@@ -41,6 +41,8 @@ export interface StoreState {
   /** Number of change sets not yet confirmed by the repository. */
   pendingWrites: number;
   lastSavedAt: number | null;
+  /** 'local' for a browser-only workspace; otherwise the live link to the shared server. */
+  connection: 'local' | ConnectionStatus;
 }
 
 const EMPTY: AppData = {
@@ -64,12 +66,15 @@ export type SprintInput = Pick<Sprint, 'name' | 'startDate' | 'endDate'> & Parti
  *   the current in-memory data and returns an OpResult. Nothing is silently ignored.
  * - Accepted changes update in-memory state immediately (instant UI feedback),
  *   then are persisted through the repository in a serialized write queue.
+ * - With a shared repository, other people's changes stream in through
+ *   `repo.watch()` and are applied to the in-memory state as they arrive.
  * - The store knows nothing about React or IndexedDB.
  */
 export class PlanningStore {
-  private state: StoreState = { status: 'loading', data: EMPTY, pendingWrites: 0, lastSavedAt: null };
+  private state: StoreState = { status: 'loading', data: EMPTY, pendingWrites: 0, lastSavedAt: null, connection: 'local' };
   private listeners = new Set<() => void>();
   private queue: Promise<void> = Promise.resolve();
+  private unwatch?: () => void;
 
   constructor(
     private readonly repo: PlanningRepository,
@@ -105,12 +110,21 @@ export class PlanningStore {
       if (!data) {
         // First launch: a clean workspace with one empty active sprint. Demo data is opt-in.
         data = createEmptyWorkspace(this.clock());
-        await this.repo.replaceAll(data);
+        await this.repo.replaceAll(data, this.repo.prepareWrite?.());
       }
       this.setState({ status: 'ready', data, error: undefined });
+      if (this.repo.watch) {
+        this.setState({ connection: 'connecting' });
+        this.unwatch = this.repo.watch(this.onRemote, (connection) => this.setState({ connection }));
+      }
     } catch (e) {
       this.setState({ status: 'error', error: e instanceof Error ? e.message : String(e) });
     }
+  }
+
+  /** Stops listening for other people's changes. */
+  dispose() {
+    this.unwatch?.();
   }
 
   /** Resolves once all queued writes have been persisted. */
@@ -133,14 +147,29 @@ export class PlanningStore {
       });
   }
 
+  private onRemote = (event: RemoteEvent) => {
+    if (event.kind === 'apply') this.setState({ data: applyChanges(this.state.data, event.changes) });
+    else if (event.kind === 'replace') this.setState({ data: event.data });
+    else {
+      // Reload after any queued writes, so their results are included.
+      this.queue = this.queue.then(async () => {
+        const fresh = await this.repo.load().catch(() => null);
+        if (fresh) this.setState({ data: fresh });
+      });
+    }
+  };
+
   private commit(changes: ChangeSet) {
     this.setState({ data: applyChanges(this.state.data, changes) });
-    this.enqueue(() => this.repo.apply(changes));
+    // Taken now, so the write is tied to the state it was validated against.
+    const token = this.repo.prepareWrite?.();
+    this.enqueue(() => this.repo.apply(changes, token));
   }
 
   private replace(data: AppData) {
     this.setState({ data });
-    this.enqueue(() => this.repo.replaceAll(data));
+    const token = this.repo.prepareWrite?.();
+    this.enqueue(() => this.repo.replaceAll(data, token));
   }
 
   // ---------------------------------------------------------------- lookups

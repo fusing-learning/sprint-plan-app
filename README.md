@@ -20,12 +20,42 @@ Other commands:
 | Command | What it does |
 |---|---|
 | `npm run dev` | Start the dev server on port 5173 |
-| `npm test` | Run the Vitest suite (37 tests in 3 files: business rules, persistence, import/export) |
+| `npm test` | Run the Vitest suite (42 tests in 4 files: business rules, persistence, import/export, shared server) |
 | `npm run typecheck` | TypeScript check (`tsc --noEmit`) |
 | `npm run build` | Typecheck, then build a production bundle to `dist/` |
 | `npm run preview` | Serve the production build locally |
+| `npm start` | Build, then run the shared server for your team (see below) |
+
+## Share it with your team (live, on your network)
+
+Run SprintFlow from one computer (for example your Mac) and everyone on the same network plans in **one shared workspace**. Changes show up for everyone straight away.
+
+```bash
+npm install
+npm start
+```
+
+The server prints the addresses to share, for example:
+
+```
+  On this computer:  http://localhost:4000
+  For colleagues:    http://192.168.1.23:4000
+                     http://Your-MacBook.local:4000
+```
+
+- **Firewall:** the first time, macOS may ask whether to allow incoming connections for `node`. Click **Allow**. If colleagues can't connect, check **System Settings → Network → Firewall**.
+- **Keep it running:** leave the terminal window open and keep the Mac awake (for example `caffeinate -i npm start`, or **System Settings → Battery/Energy → Prevent automatic sleeping**). If the server stops, browsers show **Reconnecting** and catch up when it's back.
+- **Stable address:** the IP address can change. The `.local` name usually doesn't. You can also reserve the IP address in your router.
+- **Data:** the workspace is saved in `data/workspace.json`. Before the first change each day a copy goes to `data/backups/` (the last 30 days are kept). Use `SPRINTFLOW_DATA_DIR=/some/folder npm start` to store it elsewhere, and `PORT=4001 npm start` to use another port.
+- **Moving your existing plan in:** the shared workspace starts empty and doesn't see the data in your browser at `localhost:5173`. Open the old address, use **Import / Export / Clear → Export JSON**, then open the shared address and use **Import backup**.
+- **Simultaneous edits:** each change is checked against the latest plan, so capacity limits hold even when two people edit at the same moment. If someone else's change lands first, yours is not saved, you see a message, and the latest plan loads so you can make your change again.
+- **Access:** there is no login. Anyone who can reach the address on your network can view and edit the plan, so run it only on a network you trust (such as the office network, not public Wi-Fi).
+
+For development against the shared server, run `npm run server:api` in one terminal and `npm run dev:shared` in another, then open http://localhost:5173.
 
 ## Where your data lives
+
+With `npm start` (shared mode), the data lives on the server in `data/workspace.json`. See [Share it with your team](#share-it-with-your-team-live-on-your-network). The rest of this section is about `npm run dev`, where each browser keeps its own data.
 
 - Everything is stored in **IndexedDB in this browser on this device** (database `sprintflow`). Each change is saved automatically and survives page refreshes and browser restarts.
 - Data does **not** sync between computers, browsers or browser profiles. Clearing site data for `localhost:5173` deletes it. Private/incognito windows use separate, temporary storage.
@@ -87,16 +117,18 @@ The capacity column shows:
 ```
 src/
   domain/        Pure business logic: types, capacity rules, sprint closing, backup validation
-  data/          Repository interface + IndexedDB (Dexie) and in-memory implementations, demo seed
+  data/          Repository interface + IndexedDB (Dexie), HTTP (shared server) and in-memory implementations, demo seed
   state/         PlanningStore (application service), React bindings, selectors
   components/    UI: layout, board, capacity panel, dialogs, history, ui primitives
   integrations/  Jira extension point (interfaces + pure mapping only, no network calls)
+server/          Shared-workspace server (Node, no framework): JSON-file storage, REST API, live updates
 docs/ARCHITECTURE.md   Data model, persistence, migrations, future Jira/AWS notes
 ```
 
 ## Known limitations
 
-- Single-user and single-device. Nothing syncs, and two browser tabs editing at the same time can overwrite each other. Reload a tab to pick up changes made in another.
+- With `npm run dev`, data is single-user and single-device. Nothing syncs, and two browser tabs editing at the same time can overwrite each other. Use `npm start` to share a live workspace.
+- Shared mode has no login or per-person permissions, and needs the host computer to be on and reachable.
 - No undo. Destructive actions ask for confirmation, and JSON export is the backup mechanism.
 - Projects are moved between sections with **Move to section** in the project menu, not by dragging across sections.
 - While filters or search are active, sections can't be dragged. Projects and tasks can still be reordered, and hidden items keep their positions.

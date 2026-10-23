@@ -7,7 +7,11 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
   },
-  server: { port: 5173 },
+  server: {
+    port: 5173,
+    // For `npm run dev:shared`: forward API calls to `npm run server:api`.
+    proxy: { '/api': `http://localhost:${process.env.PORT ?? 4000}` },
+  },
   build: {
     rollupOptions: {
       output: {
@@ -29,6 +33,6 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'server/**/*.test.ts'],
   },
 });

@@ -5,13 +5,27 @@
 ```
 React components ──► PlanningStore (application service) ──► PlanningRepository (interface)
         │                    │                                    ├─ DexiePlanningRepository (IndexedDB, used in the app)
-        │                    ▼                                    └─ MemoryPlanningRepository (tests / reference)
+        │                    ▼                                    ├─ HttpPlanningRepository (shared server, `npm start`)
+        │                    │                                    └─ MemoryPlanningRepository (tests / reference)
         └──────────► domain/ (pure functions: capacity, sprints, backup, ordering)
 ```
 
 - **`src/domain`** holds plain TypeScript with no React and no storage. Every business rule lives here: capacity derivation, conflict detection, story-point parsing, sprint closing and snapshots, and backup validation.
 - **`src/state/planningStore.ts`** runs operations such as `createTicket`, `updateTicket`, `closeSprint`, `clearWorkspace`, `loadDemoData` and `deleteSection`. Each one validates against the domain rules and returns `{ ok, value } | { ok: false, error, conflicts }`. Accepted changes update in-memory state straight away and are then written through the repository in a serialized queue. If a write fails, the store reloads from the repository. The code and data model still say "ticket"; the UI says "task".
 - **`src/data/repository.ts`** is the persistence contract: `load()`, `apply(changeSet)` (atomic) and `replaceAll(data)`. To move to a backend, implement `HttpPlanningRepository` with the same three methods (for example `GET /workspace`, `POST /changes`, `PUT /workspace`). No component or domain code needs to change.
+
+## Shared mode (`npm start`)
+
+`server/app.ts` is a small Node HTTP server with no framework. It holds one workspace in memory and in `data/workspace.json`, serves the built frontend, and adds a `<meta name="sprintflow-mode" content="shared">` tag to `index.html`. `src/main.tsx` sees the tag and uses `HttpPlanningRepository` instead of Dexie.
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/workspace` | `{ revision, data }` (`data` is null before first setup) |
+| `POST /api/changes` | `{ clientId, baseRevision, changes }` → `{ revision }`, or 409 |
+| `PUT /api/workspace` | `{ clientId, baseRevision, data }` → `{ revision }`, or 409 / 400 (validated with `parseBackup`) |
+| `GET /api/events?since=n` | Server-Sent Events: `change` (one per revision), `resync` (gap too large to replay), `ready`, and `: ping` heartbeats |
+
+Consistency uses **optimistic concurrency on a single revision counter**. When the store accepts a change it calls `repo.prepareWrite()` synchronously. That records the server revision the change was validated against (the latest revision seen, plus this client's own writes still in flight). The server accepts a write only if `baseRevision` equals its current revision, so capacity and ticket-key rules are never checked against stale data. On a 409 (or any failed write), the repository drops writes queued behind it and the store reloads the workspace. Other people's changes arrive on the event stream and are applied to the in-memory state with `applyChanges`. The client reconnects with backoff and catches up from a replay buffer of recent changes, or reloads when the gap is too large.
 
 ## Data model
 

@@ -1,8 +1,9 @@
 import { differenceInCalendarDays, format, parseISO } from 'date-fns';
-import { CalendarPlus, CheckCircle2, ChevronDown, ChevronRight, Gauge, Loader2, Lock, Menu, PanelLeftOpen, Pencil, Play, Square, Trash2 } from 'lucide-react';
+import { CalendarPlus, CheckCircle2, ChevronDown, ChevronRight, Gauge, Loader2, Lock, Menu, PanelLeftOpen, Pencil, Play, Square, Trash2, WifiOff } from 'lucide-react';
 import { formatPoints, summarizeSprintCapacity } from '@/domain/capacity';
 import { SPRINT_STATUS_LABEL, type Sprint } from '@/domain/types';
 import { report, sortSprints, useData, useStore, useStoreState, useUi, usePlanningSprint } from '@/state/react';
+import type { StoreState } from '@/state/planningStore';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { useConfirm } from '../ui/confirm';
@@ -22,7 +23,7 @@ export function MainHeader({ onCreateSprint, onEditSprint, onCloseSprint, onOpen
   const ui = useUi();
   const store = useStore();
   const confirm = useConfirm();
-  const { pendingWrites } = useStoreState();
+  const { pendingWrites, connection } = useStoreState();
   const planning = usePlanningSprint();
   const isHistory = ui.mode === 'history';
   const closed = sortSprints(data.sprints.filter((s) => s.status === 'closed')).reverse();
@@ -102,12 +103,7 @@ export function MainHeader({ onCreateSprint, onEditSprint, onCloseSprint, onOpen
       )}
 
       <div className="ml-auto flex items-center gap-1">
-        <Tooltip content={pendingWrites > 0 ? 'Saving to this browser…' : 'All changes saved in this browser'}>
-          <span className="mr-1 hidden items-center gap-1 text-[12px] text-muted-foreground xl:inline-flex" aria-live="polite">
-            {pendingWrites > 0 ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5 text-emerald-500" />}
-            {pendingWrites > 0 ? 'Saving' : 'Saved'}
-          </span>
-        </Tooltip>
+        <SaveStatus pendingWrites={pendingWrites} connection={connection} />
         {summary && (
           <button
             type="button"
@@ -208,5 +204,33 @@ function SprintDates({ sprint }: { sprint: Sprint }) {
       {format(start, 'd MMM')} – {format(end, 'd MMM')}
       {note && <span className="text-muted-foreground/80"> · {note}</span>}
     </span>
+  );
+}
+
+function SaveStatus({ pendingWrites, connection }: Pick<StoreState, 'pendingWrites' | 'connection'>) {
+  const local = connection === 'local';
+  const offline = connection === 'offline' || connection === 'connecting';
+  const tip = local
+    ? pendingWrites > 0
+      ? 'Saving to this browser…'
+      : 'All changes saved in this browser'
+    : offline
+      ? 'Lost connection to the SprintFlow server. Reconnecting… Changes made now may not be saved.'
+      : pendingWrites > 0
+        ? 'Saving to the shared workspace…'
+        : 'All changes saved. Edits from your team appear live.';
+  return (
+    <Tooltip content={tip}>
+      <span className="mr-1 hidden items-center gap-1 text-[12px] text-muted-foreground xl:inline-flex" aria-live="polite">
+        {offline ? (
+          <WifiOff className="size-3.5 text-amber-500" />
+        ) : pendingWrites > 0 ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <CheckCircle2 className="size-3.5 text-emerald-500" />
+        )}
+        {offline ? 'Reconnecting' : pendingWrites > 0 ? 'Saving' : local ? 'Saved' : 'Saved · Live'}
+      </span>
+    </Tooltip>
   );
 }

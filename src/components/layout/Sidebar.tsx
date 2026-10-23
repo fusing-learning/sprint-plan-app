@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Archive, CalendarCheck2, CalendarClock, Database, HardDrive, History, Inbox, Layers, PanelLeftClose, Search, UserX, Users } from 'lucide-react';
+import { Archive, CalendarCheck2, CalendarClock, Database, HardDrive, History, Radio, Inbox, Layers, PanelLeftClose, Search, UserX, Users } from 'lucide-react';
 import { formatPoints, memberAllocation, memberCapacityFor } from '@/domain/capacity';
-import { useData, useUi, usePlanningSprint, type ScopeFilter, type ViewMode } from '@/state/react';
+import { useData, useStoreState, useUi, usePlanningSprint, type ScopeFilter, type ViewMode } from '@/state/react';
 import { isOnBoard, sortedMembers, sortedSections } from '@/state/selectors';
 import { cn } from '@/lib/utils';
 import { Avatar, SectionGlyph } from '../meta';
@@ -19,6 +19,7 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
   const data = useData();
   const ui = useUi();
   const planning = usePlanningSprint();
+  const { connection } = useStoreState();
   const searchRef = React.useRef<HTMLInputElement>(null);
   const closedIds = new Set(data.sprints.filter((s) => s.status === 'closed').map((s) => s.id));
   const boardTickets = data.tickets.filter((t) => isOnBoard(t, closedIds));
@@ -162,7 +163,11 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
       <div className="space-y-0.5 border-t border-black/5 px-3 py-2">
         <NavItem icon={<Users />} label="Team settings" onClick={go(onTeam)} />
         <NavItem icon={<Database />} label="Import / Export / Clear" onClick={go(onData)} />
-        <NavItem icon={<HardDrive />} label="Saved in this browser only" muted />
+        {connection === 'local' ? (
+          <NavItem icon={<HardDrive />} label="Saved in this browser only" muted />
+        ) : (
+          <NavItem icon={<Radio />} label={connection === 'live' ? 'Shared workspace · live' : 'Shared workspace · reconnecting…'} muted />
+        )}
       </div>
     </nav>
   );

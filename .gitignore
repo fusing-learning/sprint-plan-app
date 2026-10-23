@@ -27,3 +27,6 @@ Thumbs.db
 !.vscode/extensions.json
 .idea
 .claude/
+
+# Shared-server workspace data (npm start)
+/data
