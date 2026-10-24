@@ -19,7 +19,38 @@
     --accent-foreground: 235 50% 42%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
+    /* Cut Line Ledger */
+    --cut-bg: 41 100% 93%;
+    --cut-text: 39 100% 21%;
+    --cut-strong: 39 100% 24%;
+    --flag: 16 75% 40%;
+    --flag-line: 18 66% 83%;
+    --flag-bg: 20 82% 96%;
     color-scheme: light;
+  }
+
+  .dark {
+    --background: 220 17% 7%;
+    --surface: 218 16% 10%;
+    --foreground: 220 15% 92%;
+    --muted: 220 15% 13%;
+    --muted-foreground: 218 10% 64%;
+    --border: 222 15% 17%;
+    --input: 222 14% 23%;
+    --ring: 234 85% 72%;
+    --primary: 234 85% 72%;
+    --primary-foreground: 232 40% 10%;
+    --accent: 234 30% 18%;
+    --accent-foreground: 234 90% 82%;
+    --destructive: 0 70% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --cut-bg: 39 45% 11%;
+    --cut-text: 40 80% 80%;
+    --cut-strong: 39 88% 59%;
+    --flag: 17 100% 73%;
+    --flag-line: 14 38% 25%;
+    --flag-bg: 16 22% 10%;
+    color-scheme: dark;
   }
 
   * {
@@ -42,11 +73,15 @@
   }
 
   ::selection {
-    @apply bg-indigo-100;
+    @apply bg-indigo-100 dark:bg-indigo-500/40;
   }
 }
 
 @layer utilities {
+  .theme-switching,
+  .theme-switching * {
+    transition: none !important;
+  }
   .tabular {
     font-variant-numeric: tabular-nums;
   }

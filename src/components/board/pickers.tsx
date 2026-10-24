@@ -17,7 +17,8 @@ import {
 } from '../ui/dropdown-menu';
 import { Tooltip } from '../ui/misc';
 
-export function AssigneePicker({ ticket }: { ticket: Ticket }) {
+/** `ledger` shows the avatar and full name, and "No owner" in the warning colour when unassigned. */
+export function AssigneePicker({ ticket, variant = 'pill' }: { ticket: Ticket; variant?: 'pill' | 'ledger' }) {
   const data = useData();
   const store = useStore();
   const members = sortedMembers(data);
@@ -27,16 +28,26 @@ export function AssigneePicker({ ticket }: { ticket: Ticket }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label={`Assignee: ${assignee?.name ?? 'Unassigned'}`}
-        className={cn(
-          'inline-flex h-6 max-w-[140px] shrink-0 items-center gap-1.5 rounded-full border bg-surface pl-0.5 pr-2 text-[12px] font-medium text-foreground/80 transition-colors hover:border-slate-300 hover:bg-muted/60 data-[state=open]:border-slate-300',
-          !assignee && 'border-dashed pl-2 text-muted-foreground',
-        )}
-      >
-        {assignee && <Avatar member={assignee} size="xs" />}
-        <span className="hidden truncate sm:inline">{assignee?.name ?? 'Assign'}</span>
-      </DropdownMenuTrigger>
+      {variant === 'ledger' ? (
+        <DropdownMenuTrigger
+          aria-label={`Owner: ${assignee?.name ?? 'No owner'}`}
+          className="-mx-1.5 inline-flex h-8 max-w-full items-center gap-2 rounded-md px-1.5 text-[13px] transition-colors hover:bg-muted data-[state=open]:bg-muted"
+        >
+          {assignee ? <Avatar member={assignee} /> : <span className="size-[22px] shrink-0 rounded-full border-[1.5px] border-dashed border-flag" aria-hidden />}
+          <span className={cn('truncate', assignee ? 'text-foreground/80' : 'font-semibold text-flag')}>{assignee?.name ?? 'No owner'}</span>
+        </DropdownMenuTrigger>
+      ) : (
+        <DropdownMenuTrigger
+          aria-label={`Assignee: ${assignee?.name ?? 'Unassigned'}`}
+          className={cn(
+            'inline-flex h-6 max-w-[140px] shrink-0 items-center gap-1.5 rounded-full border bg-surface pl-0.5 pr-2 text-[12px] font-medium text-foreground/80 transition-colors hover:border-slate-300 dark:hover:border-slate-600 hover:bg-muted/60 data-[state=open]:border-slate-300 dark:data-[state=open]:border-slate-600',
+            !assignee && 'border-dashed pl-2 text-muted-foreground',
+          )}
+        >
+          {assignee && <Avatar member={assignee} size="xs" />}
+          <span className="hidden truncate sm:inline">{assignee?.name ?? 'Assign'}</span>
+        </DropdownMenuTrigger>
+      )}
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuLabel>{openSprint ? `Capacity left in ${openSprint.name}` : 'Backlog · uses no capacity'}</DropdownMenuLabel>
         <DropdownMenuRadioGroup
@@ -53,7 +64,7 @@ export function AssigneePicker({ ticket }: { ticket: Ticket }) {
               const remaining = memberCapacityFor(openSprint, m) - memberAllocation(data.tickets, openSprint.id, m.id, ticket.id);
               const conflict = findCapacityConflict(data, { ...ticket, assigneeId: m.id });
               hint = (
-                <span className={cn('ml-auto tabular text-[11.5px]', conflict ? 'text-red-600' : remaining <= 2 ? 'text-amber-700' : 'text-muted-foreground')}>
+                <span className={cn('ml-auto tabular text-[11.5px]', conflict ? 'text-red-600 dark:text-red-400' : remaining <= 2 ? 'text-amber-700 dark:text-amber-300' : 'text-muted-foreground')}>
                   {conflict ? `won't fit · ${formatPoints(Math.max(0, remaining))}` : formatPoints(remaining)} SP
                 </span>
               );
@@ -126,7 +137,7 @@ export function PointsInput({ ticket, className }: { ticket: Ticket; className?:
         aria-label={`Story points for ${ticket.key}`}
         data-testid="points-input"
         className={cn(
-          'h-6 w-11 shrink-0 rounded-full border bg-surface text-center text-[12px] font-semibold tabular transition-colors placeholder:font-normal placeholder:text-muted-foreground/60 hover:border-slate-300 focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-0',
+          'h-6 w-11 shrink-0 rounded-full border bg-surface text-center text-[12px] font-semibold tabular transition-colors placeholder:font-normal placeholder:text-muted-foreground/60 hover:border-slate-300 dark:hover:border-slate-600 focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-0',
           ticket.points === null && 'border-dashed',
           className,
         )}
@@ -142,7 +153,7 @@ export function SprintToggle({ ticket, planningSprintId }: { ticket: Ticket; pla
   const planning = data.sprints.find((s) => s.id === planningSprintId);
   const current = ticket.sprintId ? data.sprints.find((s) => s.id === ticket.sprintId) : undefined;
 
-  if (!planning) return <span className="size-4 shrink-0 rounded-[4px] border border-dashed border-slate-200" aria-hidden />;
+  if (!planning) return <span className="size-4 shrink-0 rounded-[4px] border border-dashed border-slate-200 dark:border-slate-700" aria-hidden />;
   const inPlanning = ticket.sprintId === planning.id;
   const inOther = !!current && !inPlanning;
   const label = inPlanning ? `Remove from ${planning.name} (back to backlog)` : inOther ? `In ${current!.name} — move to ${planning.name}` : `Add to ${planning.name}`;
@@ -161,10 +172,10 @@ export function SprintToggle({ ticket, planningSprintId }: { ticket: Ticket; pla
         className={cn(
           'flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-all',
           inPlanning
-            ? 'border-primary bg-primary text-white hover:bg-primary/85'
+            ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/85'
             : inOther
-              ? 'border-dashed border-violet-400 bg-violet-50 text-violet-500 hover:border-primary'
-              : 'border-slate-300 bg-surface text-transparent hover:border-primary hover:text-primary/70',
+              ? 'border-dashed border-violet-400 bg-violet-50 dark:bg-violet-500/10 text-violet-500 hover:border-primary'
+              : 'border-slate-300 dark:border-slate-600 bg-surface text-transparent hover:border-primary hover:text-primary/70',
         )}
       >
         {inPlanning ? <Check className="size-3" strokeWidth={3} /> : <Plus className="size-2.5" strokeWidth={3} />}

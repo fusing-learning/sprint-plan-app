@@ -33,7 +33,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
             <>
               <DialogHeader className="flex-row items-start gap-3 pr-5">
                 {state.destructive && (
-                  <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                  <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">
                     <AlertTriangle className="size-4" />
                   </span>
                 )}

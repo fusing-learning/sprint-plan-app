@@ -110,7 +110,7 @@ export function SprintDialog({ open, sprint, onOpenChange }: { open: boolean; sp
                         <div className="text-[11.5px] text-muted-foreground">
                           {sprint ? `${formatPoints(allocated)} SP already allocated` : m.role}
                           {reduced && (
-                            <span className="ml-1.5 inline-flex items-center gap-0.5 text-amber-700">
+                            <span className="ml-1.5 inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-300">
                               <Palmtree className="size-3" /> reduced
                             </span>
                           )}
@@ -134,7 +134,7 @@ export function SprintDialog({ open, sprint, onOpenChange }: { open: boolean; sp
                         value={cap}
                         onChange={(e) => setCaps((c) => ({ ...c, [m.id]: Math.min(MAX_MEMBER_CAPACITY, Math.max(0, Number(e.target.value) || 0)) }))}
                         aria-label={`${m.name} capacity in SP`}
-                        className={cn('h-7 w-16 text-right tabular', allocated > cap && 'border-red-400 text-red-700')}
+                        className={cn('h-7 w-16 text-right tabular', allocated > cap && 'border-red-400 text-red-700 dark:text-red-300')}
                       />
                     </div>
                   );
@@ -143,7 +143,7 @@ export function SprintDialog({ open, sprint, onOpenChange }: { open: boolean; sp
             </div>
           </DialogBody>
           {error && (
-            <div role="alert" className="flex items-start gap-2 border-t border-red-200 bg-red-50 px-5 py-2.5 text-[12.5px] text-red-800">
+            <div role="alert" className="flex items-start gap-2 border-t border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-5 py-2.5 text-[12.5px] text-red-800 dark:text-red-300">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
               {error}
             </div>
@@ -284,7 +284,7 @@ export function CloseSprintDialog({ sprint, onOpenChange }: { sprint: Sprint | n
                       className={cn(
                         'inline-flex h-6 items-center gap-1 rounded px-2 text-[12px] font-medium disabled:opacity-40 [&_svg]:size-3',
                         d.type === type ? 'bg-surface shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                        d.type === type && type === 'done' && 'text-emerald-700',
+                        d.type === type && type === 'done' && 'text-emerald-700 dark:text-emerald-300',
                         d.type === type && type === 'carry' && 'text-primary',
                       )}
                     >
@@ -331,7 +331,7 @@ export function CloseSprintDialog({ sprint, onOpenChange }: { sprint: Sprint | n
           )}
 
           {conflicts.length > 0 && (
-            <div role="alert" className="space-y-1 rounded-lg border border-red-200 bg-red-50 p-3 text-[12.5px] text-red-800">
+            <div role="alert" className="space-y-1 rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-3 text-[12.5px] text-red-800 dark:text-red-300">
               <div className="flex items-center gap-1.5 font-medium">
                 <AlertTriangle className="size-4" /> Carry-over exceeds capacity in the next sprint
               </div>
@@ -349,7 +349,7 @@ export function CloseSprintDialog({ sprint, onOpenChange }: { sprint: Sprint | n
           )}
         </DialogBody>
         {error && (
-          <div role="alert" className="flex items-start gap-2 border-t border-red-200 bg-red-50 px-5 py-2.5 text-[12.5px] text-red-800">
+          <div role="alert" className="flex items-start gap-2 border-t border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-5 py-2.5 text-[12.5px] text-red-800 dark:text-red-300">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             {error}
           </div>
@@ -369,7 +369,7 @@ export function CloseSprintDialog({ sprint, onOpenChange }: { sprint: Sprint | n
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub: string; tone?: 'good' | 'warn' }) {
   return (
-    <div className={cn('rounded-lg border p-3', tone === 'good' && 'border-emerald-200 bg-emerald-50/60', tone === 'warn' && 'border-amber-200 bg-amber-50/60')}>
+    <div className={cn('rounded-lg border p-3', tone === 'good' && 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-500/10', tone === 'warn' && 'border-amber-200 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-500/10')}>
       <div className="text-[11.5px] font-medium text-muted-foreground">{label}</div>
       <div className="mt-0.5 text-[18px] font-semibold tabular tracking-tight">{value}</div>
       <div className="text-[11.5px] text-muted-foreground">{sub}</div>

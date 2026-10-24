@@ -12,7 +12,7 @@ export const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { hideClose?: boolean }
 >(({ className, children, hideClose, ...props }, ref) => (
   <DialogPrimitive.Portal>
-    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-[1px] data-[state=open]:animate-fade-in" />
+    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/30 dark:bg-black/60 backdrop-blur-[1px] data-[state=open]:animate-fade-in" />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
@@ -60,7 +60,7 @@ export const SheetContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPrimitive.Portal>
-    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/30 data-[state=open]:animate-fade-in" />
+    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/30 dark:bg-black/60 data-[state=open]:animate-fade-in" />
     <DialogPrimitive.Content
       ref={ref}
       className={cn('fixed inset-y-0 right-0 z-50 flex w-[min(360px,92vw)] flex-col border-l bg-surface shadow-pop data-[state=open]:animate-slide-in-right', className)}

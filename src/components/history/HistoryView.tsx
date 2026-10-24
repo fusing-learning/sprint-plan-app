@@ -7,9 +7,9 @@ import { cn } from '@/lib/utils';
 import { EmptyState } from '../board/Board';
 
 const OUTCOME: Record<TicketOutcome, { label: string; className: string; icon: typeof CheckCircle2 }> = {
-  completed: { label: 'Done', className: 'text-emerald-700 bg-emerald-50', icon: CheckCircle2 },
-  carried_forward: { label: 'Carried forward', className: 'text-violet-700 bg-violet-50', icon: ArrowRight },
-  returned_to_backlog: { label: 'Returned to backlog', className: 'text-slate-600 bg-slate-100', icon: Inbox },
+  completed: { label: 'Done', className: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10', icon: CheckCircle2 },
+  carried_forward: { label: 'Carried forward', className: 'text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-500/10', icon: ArrowRight },
+  returned_to_backlog: { label: 'Returned to backlog', className: 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800', icon: Inbox },
 };
 
 export function HistoryView() {
@@ -35,7 +35,7 @@ export function HistoryView() {
             onClick={() => ui.setHistorySprintId(s.id)}
             className={cn(
               'rounded-md border px-2.5 py-1 text-[12.5px] font-medium transition-colors',
-              s.id === sprint.id ? 'border-primary/40 bg-indigo-50 text-indigo-800' : 'bg-surface text-muted-foreground hover:bg-muted hover:text-foreground',
+              s.id === sprint.id ? 'border-primary/40 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-800 dark:text-indigo-300' : 'bg-surface text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
             {s.name}
@@ -48,7 +48,7 @@ export function HistoryView() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-[18px] font-semibold tracking-tight">{snap.sprintName}</h2>
-              <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600">
+              <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
                 <Lock className="size-3" /> Closed · read-only
               </span>
             </div>
@@ -92,7 +92,7 @@ export function HistoryView() {
                   <td className="px-3 py-2 text-right tabular">{formatPoints(m.planned)}</td>
                   <td className="px-3 py-2 text-right tabular">{formatPoints(m.completed)}</td>
                   <td className="px-3 py-2">
-                    <div className="relative h-1.5 overflow-hidden rounded-full bg-slate-100">
+                    <div className="relative h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                       <div className="absolute inset-y-0 left-0 rounded-full bg-indigo-300" style={{ width: `${m.capacity ? Math.min(100, (m.planned / m.capacity) * 100) : 0}%` }} />
                       <div className="absolute inset-y-0 left-0 rounded-full bg-emerald-500" style={{ width: `${m.capacity ? Math.min(100, (m.completed / m.capacity) * 100) : 0}%` }} />
                     </div>
@@ -113,7 +113,7 @@ export function HistoryView() {
 
 function Metric({ label, value, tone }: { label: string; value: number; tone?: 'good' | 'warn' }) {
   return (
-    <div className={cn('rounded-lg border p-3', tone === 'good' && 'border-emerald-200 bg-emerald-50/50', tone === 'warn' && 'border-amber-200 bg-amber-50/50')}>
+    <div className={cn('rounded-lg border p-3', tone === 'good' && 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-500/5', tone === 'warn' && 'border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/5')}>
       <div className="text-[11.5px] font-medium text-muted-foreground">{label}</div>
       <div className="mt-0.5 text-[20px] font-semibold tabular tracking-tight">
         {formatPoints(value)} <span className="text-[12px] font-medium text-muted-foreground">SP</span>

@@ -102,7 +102,7 @@ export function ProjectCard({ project, allTickets, visibleTickets, planningSprin
           {...attributes}
           {...listeners}
           aria-label={`Reorder project ${project.name}`}
-          className="absolute -left-0.5 hidden h-6 w-3.5 cursor-grab items-center justify-center rounded text-slate-300 opacity-0 transition-opacity hover:text-slate-500 focus-visible:opacity-100 group-hover/project:opacity-100 active:cursor-grabbing sm:flex"
+          className="absolute -left-0.5 hidden h-6 w-3.5 cursor-grab items-center justify-center rounded text-slate-300 dark:text-slate-600 opacity-0 transition-opacity hover:text-slate-500 dark:hover:text-slate-400 focus-visible:opacity-100 group-hover/project:opacity-100 active:cursor-grabbing sm:flex"
         >
           <GripVertical className="size-3.5" />
         </button>
@@ -126,7 +126,7 @@ export function ProjectCard({ project, allTickets, visibleTickets, planningSprin
             <Tooltip content={`Target delivery ${format(target, 'EEE d MMM yyyy')}`}>
               <Pill
                 icon={<CalendarClock />}
-                className={cn(daysToTarget !== null && daysToTarget < 0 && project.lifecycle !== 'completed' ? 'border-red-200 text-red-700' : daysToTarget !== null && daysToTarget <= 14 ? 'border-amber-200 text-amber-800' : '')}
+                className={cn(daysToTarget !== null && daysToTarget < 0 && project.lifecycle !== 'completed' ? 'border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300' : daysToTarget !== null && daysToTarget <= 14 ? 'border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300' : '')}
               >
                 {format(target, 'd MMM')}
               </Pill>

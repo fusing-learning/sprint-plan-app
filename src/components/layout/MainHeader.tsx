@@ -1,5 +1,5 @@
 import { differenceInCalendarDays, format, parseISO } from 'date-fns';
-import { CalendarPlus, CheckCircle2, ChevronDown, ChevronRight, Gauge, Loader2, Lock, Menu, PanelLeftOpen, Pencil, Play, Square, Trash2 } from 'lucide-react';
+import { CalendarPlus, CheckCircle2, ChevronDown, ChevronRight, Gauge, LayoutList, ListOrdered, Loader2, Lock, Menu, Moon, PanelLeftOpen, Pencil, Play, Square, Sun, Trash2 } from 'lucide-react';
 import { formatPoints, summarizeSprintCapacity } from '@/domain/capacity';
 import { SPRINT_STATUS_LABEL, type Sprint } from '@/domain/types';
 import { report, sortSprints, useData, useStore, useStoreState, useUi, usePlanningSprint } from '@/state/react';
@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { useConfirm } from '../ui/confirm';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { Tooltip } from '../ui/misc';
+import { Segmented, Tooltip } from '../ui/misc';
+import type { PlanView, Theme } from '../prefs';
 
 interface Props {
   onCreateSprint: () => void;
@@ -15,9 +16,13 @@ interface Props {
   onCloseSprint: (s: Sprint) => void;
   onOpenMenu: () => void;
   onOpenCapacity: () => void;
+  view: PlanView;
+  onViewChange: (v: PlanView) => void;
+  theme: Theme;
+  onThemeChange: (t: Theme) => void;
 }
 
-export function MainHeader({ onCreateSprint, onEditSprint, onCloseSprint, onOpenMenu, onOpenCapacity }: Props) {
+export function MainHeader({ onCreateSprint, onEditSprint, onCloseSprint, onOpenMenu, onOpenCapacity, view, onViewChange, theme, onThemeChange }: Props) {
   const data = useData();
   const ui = useUi();
   const store = useStore();
@@ -101,7 +106,20 @@ export function MainHeader({ onCreateSprint, onEditSprint, onCloseSprint, onOpen
         <span className="text-[13px] text-muted-foreground">{isHistory ? 'No closed sprints yet' : ui.mode === 'future' ? 'No future sprints' : 'No active sprint'}</span>
       )}
 
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-1">
+        {!isHistory && (
+          <Segmented
+            ariaLabel="Planning view"
+            size="sm"
+            className="mr-1"
+            value={view}
+            onChange={onViewChange}
+            options={[
+              { value: 'ledger', label: <span className="sr-only sm:not-sr-only">Ledger</span>, icon: <ListOrdered /> },
+              { value: 'board', label: <span className="sr-only sm:not-sr-only">Board</span>, icon: <LayoutList /> },
+            ]}
+          />
+        )}
         <Tooltip content={pendingWrites > 0 ? 'Saving to this browser…' : 'All changes saved in this browser'}>
           <span className="mr-1 hidden items-center gap-1 text-[12px] text-muted-foreground xl:inline-flex" aria-live="polite">
             {pendingWrites > 0 ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5 text-emerald-500" />}
@@ -162,6 +180,17 @@ export function MainHeader({ onCreateSprint, onEditSprint, onCloseSprint, onOpen
         <Button size="sm" variant="ghost" onClick={onCreateSprint}>
           <CalendarPlus /> <span className="hidden md:inline">New sprint</span>
         </Button>
+        <Segmented
+          ariaLabel="Theme"
+          size="sm"
+          className="ml-1"
+          value={theme}
+          onChange={onThemeChange}
+          options={[
+            { value: 'light', label: <span className="sr-only xl:not-sr-only">Light</span>, icon: <Sun /> },
+            { value: 'dark', label: <span className="sr-only xl:not-sr-only">Dark</span>, icon: <Moon /> },
+          ]}
+        />
       </div>
     </header>
   );
@@ -170,7 +199,7 @@ export function MainHeader({ onCreateSprint, onEditSprint, onCloseSprint, onOpen
 function SprintMenuItem({ sprint, current, onSelect }: { sprint: Sprint; current: boolean; onSelect: () => void }) {
   return (
     <DropdownMenuItem onSelect={onSelect} className={cn(current && 'bg-muted/70')}>
-      <span className={cn('size-2 rounded-full', sprint.status === 'active' ? 'bg-emerald-500' : sprint.status === 'planned' ? 'bg-violet-400' : 'bg-slate-300')} />
+      <span className={cn('size-2 rounded-full', sprint.status === 'active' ? 'bg-emerald-500' : sprint.status === 'planned' ? 'bg-violet-400' : 'bg-slate-300 dark:bg-slate-600')} />
       <span className="font-medium">{sprint.name}</span>
       <span className="ml-auto text-[11.5px] text-muted-foreground">
         {format(parseISO(sprint.startDate), 'd MMM')} – {format(parseISO(sprint.endDate), 'd MMM')}

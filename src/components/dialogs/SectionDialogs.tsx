@@ -108,7 +108,7 @@ export function DeleteSectionDialog({ section, onOpenChange }: { section: Sectio
         {projects.length > 0 && (
           <DialogBody className="space-y-3 pb-4">
             {others.length === 0 ? (
-              <p className="rounded-md bg-amber-50 p-3 text-[13px] text-amber-800">Create another section first — projects need somewhere to go.</p>
+              <p className="rounded-md bg-amber-50 dark:bg-amber-500/10 p-3 text-[13px] text-amber-800 dark:text-amber-300">Create another section first — projects need somewhere to go.</p>
             ) : (
               <Field label="Move projects to">
                 <Select value={target} onValueChange={setTarget}>

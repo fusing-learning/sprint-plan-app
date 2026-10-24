@@ -227,7 +227,7 @@ export function DataDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           </ActionRow>
 
           {importErrors && (
-            <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-[12.5px] text-red-800">
+            <div role="alert" className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-3 text-[12.5px] text-red-800 dark:text-red-300">
               <div className="mb-1 flex items-center gap-1.5 font-medium">
                 <AlertTriangle className="size-4" /> This file can’t be imported
               </div>
@@ -239,7 +239,7 @@ export function DataDialog({ open, onOpenChange }: { open: boolean; onOpenChange
             </div>
           )}
           {pending && (
-            <div className="rounded-lg border border-indigo-200 bg-indigo-50/60 p-3 text-[12.5px]">
+            <div className="rounded-lg border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/60 dark:bg-indigo-500/10 p-3 text-[12.5px]">
               <div className="font-medium">{pending.fileName} is valid</div>
               <div className="mt-0.5 text-muted-foreground">
                 Exported {format(new Date(pending.exportedAt), 'd MMM yyyy, HH:mm')} · {pending.data.projects.length} projects · {pending.data.tickets.length} tasks ·{' '}

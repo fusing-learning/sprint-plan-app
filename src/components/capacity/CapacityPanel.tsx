@@ -48,7 +48,7 @@ export function CapacityPanel({ onEditSprint, onCreateSprint }: { onEditSprint: 
         </Tooltip>
       </div>
       {isProjected && (
-        <p className="mx-5 mt-1 flex items-start gap-1.5 text-[12px] text-violet-700">
+        <p className="mx-5 mt-1 flex items-start gap-1.5 text-[12px] text-violet-700 dark:text-violet-300">
           <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
           Future sprint. This doesn’t change active sprint capacity.
         </p>
@@ -62,7 +62,7 @@ export function CapacityPanel({ onEditSprint, onCreateSprint }: { onEditSprint: 
             <span className="text-[14px] font-medium text-muted-foreground"> / {formatPoints(summary.totalCapacity)} SP</span>
           </div>
           <div className="text-right text-[12.5px] text-muted-foreground">
-            <span className={cn('text-[15px] font-semibold tabular', summary.totalRemaining <= 0 ? 'text-emerald-600' : 'text-foreground')}>{formatPoints(summary.totalRemaining)}</span> left
+            <span className={cn('text-[15px] font-semibold tabular', summary.totalRemaining <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground')}>{formatPoints(summary.totalRemaining)}</span> left
           </div>
         </div>
         <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={summary.totalCapacity} aria-valuenow={summary.totalUsed} aria-label="Team allocation">
@@ -125,7 +125,7 @@ function MemberRow({ m, active, onClick }: { m: MemberCapacity; active: boolean;
         type="button"
         onClick={onClick}
         aria-pressed={active}
-        className={cn('w-full rounded-md px-3 py-2 text-left transition-colors hover:bg-muted/70', active && 'bg-indigo-50 hover:bg-indigo-50')}
+        className={cn('w-full rounded-md px-3 py-2 text-left transition-colors hover:bg-muted/70', active && 'bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-50 dark:hover:bg-indigo-500/10')}
         data-testid="member-capacity"
         data-member={m.member.name}
       >
@@ -134,7 +134,7 @@ function MemberRow({ m, active, onClick }: { m: MemberCapacity; active: boolean;
           <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{m.member.name}</span>
           {m.isReduced && (
             <Tooltip content={`Capacity reduced to ${formatPoints(m.capacity)} (default ${formatPoints(m.defaultCapacity)}) for this sprint`}>
-              <Palmtree className="size-3.5 shrink-0 text-amber-600" aria-label="Reduced capacity" />
+              <Palmtree className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" aria-label="Reduced capacity" />
             </Tooltip>
           )}
           <span className="text-[12.5px] tabular text-muted-foreground" data-testid="member-used">
@@ -143,9 +143,9 @@ function MemberRow({ m, active, onClick }: { m: MemberCapacity; active: boolean;
           <span
             className={cn(
               'w-[52px] text-right text-[12px] font-medium tabular',
-              m.state === 'full' && 'text-emerald-600',
-              m.state === 'low' && 'text-amber-600',
-              m.state === 'over' && 'text-red-600',
+              m.state === 'full' && 'text-emerald-600 dark:text-emerald-400',
+              m.state === 'low' && 'text-amber-600 dark:text-amber-400',
+              m.state === 'over' && 'text-red-600 dark:text-red-400',
               (m.state === 'ok' || m.state === 'empty') && 'text-muted-foreground',
             )}
             data-testid="member-remaining"
@@ -174,7 +174,7 @@ function GapRow({ label, detail, active, onClick }: { label: string; detail: str
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={cn('flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-muted/70', active && 'bg-orange-50 hover:bg-orange-50')}
+      className={cn('flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-muted/70', active && 'bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-50 dark:hover:bg-orange-500/10')}
     >
       <span className="size-2 rounded-full bg-orange-500" />
       <span className="font-medium">{label}</span>
@@ -221,11 +221,11 @@ function Allocation({ sprint, member }: { sprint: Sprint; member: MemberCapacity
       </div>
       <div className="px-5">
         {member ? (
-          <div className="mb-2.5 flex items-center gap-2 rounded-md bg-indigo-50 px-2 py-1.5 text-[12.5px]">
+          <div className="mb-2.5 flex items-center gap-2 rounded-md bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1.5 text-[12.5px]">
             <Avatar member={member.member} size="xs" />
             <span className="font-medium">{member.member.name}</span>
             <span className="text-muted-foreground tabular">· {formatPoints(total)} SP</span>
-            <button type="button" onClick={() => ui.setFilters({ assignee: 'all' })} className="ml-auto rounded p-0.5 text-muted-foreground hover:bg-white hover:text-foreground" aria-label="Show whole team">
+            <button type="button" onClick={() => ui.setFilters({ assignee: 'all' })} className="ml-auto rounded p-0.5 text-muted-foreground hover:bg-white dark:hover:bg-white/10 hover:text-foreground" aria-label="Show whole team">
               <X className="size-3.5" />
             </button>
           </div>

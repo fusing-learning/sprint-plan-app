@@ -32,9 +32,7 @@ interface Props {
 
 export function TicketRow({ ticket, planningSprintId, onMove, canMoveUp, canMoveDown }: Props) {
   const data = useData();
-  const store = useStore();
   const ui = useUi();
-  const confirm = useConfirm();
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: ticket.id });
 
   const sprint = ticket.sprintId ? data.sprints.find((s) => s.id === ticket.sprintId) : undefined;
@@ -42,17 +40,6 @@ export function TicketRow({ ticket, planningSprintId, onMove, canMoveUp, canMove
   const otherSprint = sprint && !inPlanning ? sprint : undefined;
   const missingAssignee = inPlanning && ticket.assigneeId === null;
   const missingEstimate = inPlanning && ticket.points === null;
-  const openSprints = sortSprints(data.sprints.filter((s) => s.status !== 'closed'));
-
-  const handleDelete = async () => {
-    const ok = await confirm({
-      title: `Delete ${ticket.key}?`,
-      description: <>“{ticket.title}” will be permanently deleted.{inPlanning && ticket.points ? ' Its SP will be released from the sprint.' : ''}</>,
-      confirmLabel: 'Delete task',
-      destructive: true,
-    });
-    if (ok) report(store.deleteTicket(ticket.id), 'Task deleted');
-  };
 
   return (
     <div
@@ -60,7 +47,7 @@ export function TicketRow({ ticket, planningSprintId, onMove, canMoveUp, canMove
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={cn(
         'group/row relative flex h-10 items-center gap-2.5 pl-3 pr-3 transition-colors sm:pl-9',
-        inPlanning ? 'bg-indigo-50/40 hover:bg-indigo-50/80' : 'hover:bg-muted/60',
+        inPlanning ? 'bg-indigo-50/40 dark:bg-indigo-500/5 hover:bg-indigo-50/80 dark:hover:bg-indigo-500/10' : 'hover:bg-muted/60',
         isDragging && 'z-10 rounded-md bg-surface shadow-pop ring-1 ring-primary/30',
       )}
       data-testid="ticket-row"
@@ -71,7 +58,7 @@ export function TicketRow({ ticket, planningSprintId, onMove, canMoveUp, canMove
         {...attributes}
         {...listeners}
         aria-label={`Reorder ${ticket.key}. Press space to pick up, arrow keys to move.`}
-        className="absolute left-3 hidden h-6 w-4 cursor-grab items-center justify-center rounded text-slate-300 opacity-0 transition-opacity hover:text-slate-500 focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing sm:flex"
+        className="absolute left-3 hidden h-6 w-4 cursor-grab items-center justify-center rounded text-slate-300 dark:text-slate-600 opacity-0 transition-opacity hover:text-slate-500 dark:hover:text-slate-400 focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing sm:flex"
       >
         <GripVertical className="size-3.5" />
       </button>
@@ -103,53 +90,87 @@ export function TicketRow({ ticket, planningSprintId, onMove, canMoveUp, canMove
         )}
         <AssigneePicker ticket={ticket} />
         <PointsInput ticket={ticket} />
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className="flex size-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100 data-[state=open]:bg-muted data-[state=open]:opacity-100"
-            aria-label={`Actions for ${ticket.key}`}
-          >
-            <MoreHorizontal className="size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuItem onSelect={() => ui.openTicket(ticket.id)}>
-              <Pencil /> Open details
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => report(store.duplicateTicket(ticket.id))}>
-              <Copy /> Duplicate
-            </DropdownMenuItem>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <CalendarRange /> Move to sprint
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-52">
-                <DropdownMenuItem disabled={ticket.sprintId === null} onSelect={() => report(store.updateTicket(ticket.id, { sprintId: null }))}>
-                  <Inbox /> Backlog
-                </DropdownMenuItem>
-                {openSprints.map((s) => (
-                  <DropdownMenuItem key={s.id} disabled={ticket.sprintId === s.id} onSelect={() => report(store.updateTicket(ticket.id, { sprintId: s.id }))}>
-                    <CalendarRange />
-                    {s.name}
-                    <span className="ml-auto text-[11px] text-muted-foreground">{s.status === 'active' ? 'Active' : 'Planned'}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            <MoveToProjectSub ticket={ticket} />
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled={!canMoveUp} onSelect={() => onMove(-1)}>
-              <ArrowUp /> Move up
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={!canMoveDown} onSelect={() => onMove(1)}>
-              <ArrowDown /> Move down
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem destructive onSelect={handleDelete}>
-              <Trash2 /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <TicketActions
+          ticket={ticket}
+          planningSprintId={planningSprintId}
+          onMove={onMove}
+          canMoveUp={canMoveUp}
+          canMoveDown={canMoveDown}
+          triggerClassName="opacity-0 focus-visible:opacity-100 group-hover/row:opacity-100"
+        />
       </div>
     </div>
+  );
+}
+
+/** The ⋯ menu for a task: details, duplicate, move to sprint or project, reorder, delete. */
+export function TicketActions({ ticket, planningSprintId, onMove, canMoveUp, canMoveDown, triggerClassName }: Props & { triggerClassName?: string }) {
+  const data = useData();
+  const store = useStore();
+  const ui = useUi();
+  const confirm = useConfirm();
+  const inPlanning = !!planningSprintId && ticket.sprintId === planningSprintId;
+  const openSprints = sortSprints(data.sprints.filter((s) => s.status !== 'closed'));
+
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: `Delete ${ticket.key}?`,
+      description: <>“{ticket.title}” will be permanently deleted.{inPlanning && ticket.points ? ' Its SP will be released from the sprint.' : ''}</>,
+      confirmLabel: 'Delete task',
+      destructive: true,
+    });
+    if (ok) report(store.deleteTicket(ticket.id), 'Task deleted');
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(
+        'flex size-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground data-[state=open]:bg-muted data-[state=open]:opacity-100',
+        triggerClassName,
+      )}
+        aria-label={`Actions for ${ticket.key}`}
+      >
+        <MoreHorizontal className="size-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem onSelect={() => ui.openTicket(ticket.id)}>
+          <Pencil /> Open details
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => report(store.duplicateTicket(ticket.id))}>
+          <Copy /> Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <CalendarRange /> Move to sprint
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent className="w-52">
+            <DropdownMenuItem disabled={ticket.sprintId === null} onSelect={() => report(store.updateTicket(ticket.id, { sprintId: null }))}>
+              <Inbox /> Backlog
+            </DropdownMenuItem>
+            {openSprints.map((s) => (
+              <DropdownMenuItem key={s.id} disabled={ticket.sprintId === s.id} onSelect={() => report(store.updateTicket(ticket.id, { sprintId: s.id }))}>
+                <CalendarRange />
+                {s.name}
+                <span className="ml-auto text-[11px] text-muted-foreground">{s.status === 'active' ? 'Active' : 'Planned'}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <MoveToProjectSub ticket={ticket} />
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={!canMoveUp} onSelect={() => onMove(-1)}>
+          <ArrowUp /> Move up
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!canMoveDown} onSelect={() => onMove(1)}>
+          <ArrowDown /> Move down
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem destructive onSelect={handleDelete}>
+          <Trash2 /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

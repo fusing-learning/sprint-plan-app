@@ -11,9 +11,9 @@ export const buttonVariants = cva(
         default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 active:bg-primary/95',
         secondary: 'bg-surface text-foreground border border-input shadow-sm hover:bg-muted',
         ghost: 'text-foreground/80 hover:bg-muted hover:text-foreground',
-        subtle: 'bg-muted text-foreground hover:bg-slate-200/70',
+        subtle: 'bg-muted text-foreground hover:bg-slate-200/70 dark:hover:bg-slate-700/70',
         destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        'destructive-ghost': 'text-red-600 hover:bg-red-50',
+        'destructive-ghost': 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10',
         link: 'text-primary underline-offset-4 hover:underline px-0 h-auto',
       },
       size: {

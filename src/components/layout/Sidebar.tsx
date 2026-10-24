@@ -58,7 +58,7 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
   return (
     <nav className="flex h-full flex-col" aria-label="Sidebar">
       <div className="flex h-12 shrink-0 items-center gap-2 px-4">
-        <span className="flex size-6 items-center justify-center rounded-md bg-primary text-white shadow-sm">
+        <span className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
           <svg viewBox="0 0 32 32" className="size-3.5" aria-hidden>
             <path d="M7 21c2.8 0 3.9-10 8.5-10S21.2 21 25 21" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" />
           </svg>
@@ -66,7 +66,7 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
         <span className="text-[14px] font-semibold tracking-tight">SprintFlow</span>
         {showCollapse && (
           <Tooltip content="Hide sidebar">
-            <button type="button" onClick={() => ui.setSidebarCollapsed(true)} className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-black/5 hover:text-foreground" aria-label="Hide sidebar">
+            <button type="button" onClick={() => ui.setSidebarCollapsed(true)} className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground" aria-label="Hide sidebar">
               <PanelLeftClose className="size-4" />
             </button>
           </Tooltip>
@@ -87,7 +87,7 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
             onKeyDown={(e) => e.key === 'Escape' && (ui.setSearch(''), (e.target as HTMLInputElement).blur())}
             placeholder="Search"
             aria-label="Search tasks and projects"
-            className="h-8 w-full rounded-md border border-transparent bg-black/[0.04] pl-8 pr-8 text-[13px] transition-colors placeholder:text-muted-foreground hover:bg-black/[0.06] focus-visible:border-primary/50 focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-0 [&::-webkit-search-cancel-button]:hidden"
+            className="h-8 w-full rounded-md border border-transparent bg-black/[0.04] dark:bg-white/[0.04] pl-8 pr-8 text-[13px] transition-colors placeholder:text-muted-foreground hover:bg-black/[0.06] dark:hover:bg-white/[0.06] focus-visible:border-primary/50 focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-0 [&::-webkit-search-cancel-button]:hidden"
           />
           {!ui.search && <Kbd className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent">/</Kbd>}
         </div>
@@ -131,7 +131,7 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
                 key={m.id}
                 icon={<Avatar member={m} size="xs" />}
                 label={m.name}
-                trailing={cap !== null && used !== null ? <span className={cn('tabular', used >= cap && cap > 0 && 'text-emerald-600')}>{`${formatPoints(used)}/${formatPoints(cap)}`}</span> : undefined}
+                trailing={cap !== null && used !== null ? <span className={cn('tabular', used >= cap && cap > 0 && 'text-emerald-600 dark:text-emerald-400')}>{`${formatPoints(used)}/${formatPoints(cap)}`}</span> : undefined}
                 active={planningMode && ui.filters.assignee === m.id}
                 onClick={setAssignee(m.id)}
               />
@@ -159,7 +159,7 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
         </Group>
       </div>
 
-      <div className="space-y-0.5 border-t border-black/5 px-3 py-2">
+      <div className="space-y-0.5 border-t border-black/5 dark:border-white/5 px-3 py-2">
         <NavItem icon={<Users />} label="Team settings" onClick={go(onTeam)} />
         <NavItem icon={<Database />} label="Import / Export / Clear" onClick={go(onData)} />
         <NavItem icon={<HardDrive />} label="Saved in this browser only" muted />
@@ -208,8 +208,8 @@ function NavItem({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'flex h-[30px] w-full items-center gap-2 rounded-md px-2 text-left text-[13px] font-medium text-foreground/80 transition-colors hover:bg-black/[0.05] [&_svg]:size-4 [&_svg]:text-muted-foreground',
-        active && 'bg-black/[0.07] text-foreground hover:bg-black/[0.07]',
+        'flex h-[30px] w-full items-center gap-2 rounded-md px-2 text-left text-[13px] font-medium text-foreground/80 transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.05] [&_svg]:size-4 [&_svg]:text-muted-foreground',
+        active && 'bg-black/[0.07] dark:bg-white/[0.07] text-foreground hover:bg-black/[0.07] dark:hover:bg-white/[0.07]',
       )}
     >
       <span className="flex w-4 shrink-0 justify-center">{icon}</span>

@@ -15,7 +15,7 @@ export function Tooltip({ content, children, side = 'top' }: { content: React.Re
         <TooltipPrimitive.Content
           side={side}
           sideOffset={6}
-          className="z-[60] max-w-xs rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow-pop data-[state=delayed-open]:animate-fade-in"
+          className="z-[60] max-w-xs rounded-md bg-slate-900 px-2 py-1 text-xs text-white dark:bg-slate-700 shadow-pop data-[state=delayed-open]:animate-fade-in"
         >
           {content}
         </TooltipPrimitive.Content>
@@ -50,7 +50,7 @@ export const Switch = React.forwardRef<
   <SwitchPrimitive.Root
     ref={ref}
     className={cn(
-      'peer inline-flex h-[18px] w-8 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors data-[state=checked]:bg-primary data-[state=unchecked]:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50',
+      'peer inline-flex h-[18px] w-8 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors data-[state=checked]:bg-primary data-[state=unchecked]:bg-slate-300 dark:data-[state=unchecked]:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50',
       className,
     )}
     {...props}

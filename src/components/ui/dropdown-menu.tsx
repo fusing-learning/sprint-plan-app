@@ -33,7 +33,7 @@ export const DropdownMenuItem = React.forwardRef<
 >(({ className, destructive, ...props }, ref) => (
   <DropdownMenuPrimitive.Item
     ref={ref}
-    className={cn(itemBase, destructive && 'text-red-600 focus:bg-red-50 focus:text-red-700 [&_svg]:text-red-500', className)}
+    className={cn(itemBase, destructive && 'text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-500/10 focus:text-red-700 dark:focus:text-red-300 [&_svg]:text-red-500', className)}
     {...props}
   />
 ));

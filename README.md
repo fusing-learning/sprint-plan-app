@@ -20,7 +20,7 @@ Other commands:
 | Command | What it does |
 |---|---|
 | `npm run dev` | Start the dev server on port 5173 |
-| `npm test` | Run the Vitest suite (37 tests in 3 files: business rules, persistence, import/export) |
+| `npm test` | Run the Vitest suite (46 tests in 4 files: business rules, persistence, import/export, cut-line ledger) |
 | `npm run typecheck` | TypeScript check (`tsc --noEmit`) |
 | `npm run build` | Typecheck, then build a production bundle to `dist/` |
 | `npm run preview` | Serve the production build locally |
@@ -34,7 +34,7 @@ Other commands:
 
 ## Planning workflow
 
-The layout is a left sidebar, a main panel and a right capacity column.
+The layout is a left sidebar, a main panel and a right capacity column. The header switches the main panel between the **Ledger** and the **Board**, and between **Light** and **Dark** themes. Both choices are remembered in this browser.
 
 - **Sidebar:** search (press `/`), **Active sprint / Future sprints / Sprint history**, **Show** (All tasks / In sprint / Backlog / Archived projects), a **People** list with used/capacity (click a person to filter to their tasks), **Unassigned**, a **Sections** jump list, **Team settings** and **Import / Export / Clear**. The sidebar can be hidden.
 - **Main panel:** a header with breadcrumb, sprint switcher, status, dates and **Edit / Close / Activate sprint** and **New sprint**. Below it, a filter-chip bar (for example "Assignee is Engineer A ×"), a **Filter** menu, an **Expand** menu (expand/collapse all sections and all projects), **+ Section** and **New project**, then the board.
@@ -63,6 +63,17 @@ Shortcuts and tips:
 - Applying a filter expands the matching projects once. Projects and sections stay collapsible while filtered. Each section header also has its own expand/collapse-all-projects button.
 - Archived projects are hidden from the board. View them with the sidebar **Archived projects** item (or **Filter → Show archived projects**).
 - Drag the handles to reorder sections, projects and tasks. Each item's **⋯** menu also has **Move up / Move down**, and keyboard drag works too: focus a handle, press Space, use the arrow keys, then press Space again.
+
+### Cut Line Ledger
+
+The ledger is a dense table of every task ranked top-down: section (P0 first), then project, then task, in the same order as the board. Columns are rank, task, owner, SP and a running total against the team's capacity.
+
+- Going down the list, each task with an owner and SP is counted until one would go past the team's capacity or its owner's capacity for that sprint. An amber **cut line** sits above that task and says why, for example "Next task needs 3 SP from Engineer C, who has 2 left." Rows below it are dimmed.
+- Only backlog tasks and tasks already in the sprint you're planning are ranked. Tasks in another open sprint show that sprint's name and are skipped. Projects that are on hold, completed or archived are not ranked; a section whose projects are all like that shows "Not this sprint" and starts collapsed.
+- Tasks above the line without an owner or SP are flagged **Not counted** and never move the line.
+- The line is guidance. It never changes which tasks are in the sprint: tick the checkbox on a row as before, or use **Fill to line** to add every counted task above the line that isn't in the sprint yet. Each one still goes through the normal capacity check, so a task that doesn't fit is refused with the usual message.
+- The header shows SP above the line / capacity, SP and task count below the line, flags and what's actually in the sprint. Person cards show SP above the line for each person (click to filter), and the **Incomplete planning** card filters to the flagged tasks.
+- Re-rank with the same drag handles and **Move up / Move down** menu items as the board. Search, filters and future sprints (projected capacity) work the same way. On narrow screens the table scrolls sideways inside its own box.
 
 ## Capacity rules
 

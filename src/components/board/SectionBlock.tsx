@@ -94,7 +94,7 @@ export function SectionBlock(props: Props) {
               <button
                 type="button"
                 onClick={() => ui.setExpandedMany(visibleIds, !allProjectsOpen)}
-                className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-black/5 hover:text-foreground"
+                className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
                 aria-label={allProjectsOpen ? `Collapse all projects in ${section.name}` : `Expand all projects in ${section.name}`}
               >
                 {allProjectsOpen ? <ChevronsDownUp className="size-3.5" /> : <ChevronsUpDown className="size-3.5" />}
@@ -105,14 +105,14 @@ export function SectionBlock(props: Props) {
             <button
               type="button"
               onClick={() => props.onNewProject(section.id)}
-              className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-black/5 hover:text-foreground"
+              className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
               aria-label={`New project in ${section.name}`}
             >
               <Plus className="size-4" />
             </button>
           </Tooltip>
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-black/5 hover:text-foreground data-[state=open]:bg-black/5" aria-label={`Actions for section ${section.name}`}>
+            <DropdownMenuTrigger className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground data-[state=open]:bg-black/5 dark:data-[state=open]:bg-white/5" aria-label={`Actions for section ${section.name}`}>
               <MoreHorizontal className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">

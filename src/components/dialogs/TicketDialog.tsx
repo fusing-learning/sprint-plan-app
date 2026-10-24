@@ -163,7 +163,7 @@ function TicketForm({ existing, createProjectId }: { existing?: Ticket; createPr
               <div className="flex h-8 items-center rounded-md border bg-muted px-2.5 text-[13px] text-muted-foreground">{currentSprint!.name} (closed)</div>
             ) : (
               <Select value={draft.sprintId ?? NONE} onValueChange={(v) => set('sprintId', v === NONE ? null : v)}>
-                <SelectTrigger aria-label="Sprint" className={cn(draft.sprintId && 'border-primary/40 bg-indigo-50/60')}>
+                <SelectTrigger aria-label="Sprint" className={cn(draft.sprintId && 'border-primary/40 bg-indigo-50/60 dark:bg-indigo-500/10')}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -219,11 +219,11 @@ function TicketForm({ existing, createProjectId }: { existing?: Ticket; createPr
               aria-label="Story points"
               className={cn('tabular', !parsedPoints.ok && 'border-red-400')}
             />
-            {!parsedPoints.ok && <p className="text-[11.5px] text-red-600">{parsedPoints.error}</p>}
+            {!parsedPoints.ok && <p className="text-[11.5px] text-red-600 dark:text-red-400">{parsedPoints.error}</p>}
           </PropRow>
 
           {capacityPreview && (
-            <div className={cn('rounded-lg border p-2.5 text-[12px]', conflict ? 'border-red-200 bg-red-50 text-red-800' : 'border-indigo-100 bg-indigo-50/70 text-indigo-900')}>
+            <div className={cn('rounded-lg border p-2.5 text-[12px]', conflict ? 'border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 text-red-800 dark:text-red-300' : 'border-indigo-100 dark:border-indigo-500/30 bg-indigo-50/70 dark:bg-indigo-500/10 text-indigo-900 dark:text-indigo-200')}>
               <div className="flex items-center justify-between font-medium">
                 <span className="truncate">
                   {assignee!.name} · {currentSprint!.name}
@@ -232,7 +232,7 @@ function TicketForm({ existing, createProjectId }: { existing?: Ticket; createPr
                   {formatPoints(capacityPreview.after)} / {formatPoints(capacityPreview.cap)}
                 </span>
               </div>
-              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/80">
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/80 dark:bg-white/10">
                 <div
                   className={cn('h-full rounded-full transition-all', conflict ? 'bg-red-500' : capacityPreview.after === capacityPreview.cap ? 'bg-emerald-500' : 'bg-primary')}
                   style={{ width: `${Math.min(100, capacityPreview.cap ? (capacityPreview.after / capacityPreview.cap) * 100 : 100)}%` }}
@@ -242,7 +242,7 @@ function TicketForm({ existing, createProjectId }: { existing?: Ticket; createPr
             </div>
           )}
           {currentSprint && !isClosedSprint && (!draft.assigneeId || effective.points === null) && (
-            <p className="flex items-start gap-1.5 rounded-md bg-orange-50 p-2 text-[12px] text-orange-800">
+            <p className="flex items-start gap-1.5 rounded-md bg-orange-50 dark:bg-orange-500/10 p-2 text-[12px] text-orange-800 dark:text-orange-300">
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
               Needs {!draft.assigneeId && effective.points === null ? 'an assignee and SP' : !draft.assigneeId ? 'an assignee' : 'SP'} to count toward capacity.
             </p>
@@ -282,7 +282,7 @@ function TicketForm({ existing, createProjectId }: { existing?: Ticket; createPr
       </div>
 
       {error && (
-        <div role="alert" className="flex items-start gap-2 border-t border-red-200 bg-red-50 px-5 py-2.5 text-[12.5px] text-red-800">
+        <div role="alert" className="flex items-start gap-2 border-t border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-5 py-2.5 text-[12.5px] text-red-800 dark:text-red-300">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           {error}
         </div>

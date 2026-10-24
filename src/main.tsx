@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Toaster } from 'sonner';
 import '@fontsource-variable/inter';
+import '@fontsource-variable/inter-tight';
+import '@fontsource-variable/jetbrains-mono';
 import './index.css';
 import App from './App';
 import { DexiePlanningRepository } from './data/dexieRepository';
@@ -9,6 +11,7 @@ import { PlanningStore } from './state/planningStore';
 import { StoreProvider, UiProvider, useStoreState } from './state/react';
 import { ConfirmProvider } from './components/ui/confirm';
 import { TooltipProvider } from './components/ui/misc';
+import { useTheme } from './components/prefs';
 import { toast } from 'sonner';
 
 const store = new PlanningStore(new DexiePlanningRepository(), undefined, (e) => {
@@ -27,7 +30,7 @@ function Root() {
   if (state.status === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center text-[13px] text-muted-foreground">
-        <span className="mr-2 size-4 animate-spin rounded-full border-2 border-slate-300 border-t-primary" />
+        <span className="mr-2 size-4 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-600 border-t-primary" />
         Loading your workspace…
       </div>
     );
@@ -50,13 +53,18 @@ function Root() {
   );
 }
 
+function ThemedToaster() {
+  const [theme] = useTheme();
+  return <Toaster theme={theme} position="bottom-left" richColors closeButton toastOptions={{ className: 'text-[13px]' }} />;
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <StoreProvider store={store}>
       <TooltipProvider delayDuration={350} skipDelayDuration={100}>
         <ConfirmProvider>
           <Root />
-          <Toaster position="bottom-left" richColors closeButton toastOptions={{ className: 'text-[13px]' }} />
+          <ThemedToaster />
         </ConfirmProvider>
       </TooltipProvider>
     </StoreProvider>
