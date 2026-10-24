@@ -65,19 +65,25 @@ describe('closing a sprint', () => {
     expect(snap.carriedToSprintName).toBe('Sprint 2');
   });
 
-  it('rejects carry-over that would exceed the next sprint capacity', () => {
+  it('allows carry-over past the next sprint capacity and reports it', () => {
     const { f, wip } = setup();
     f.data.tickets.push(ticket(f, { assigneeId: f.b.id, points: 9, sprintId: f.future.id }));
-    expect(() => closeSprint(f.data, f.active.id, { [wip.id]: { type: 'carry', sprintId: f.future.id } })).toThrow(SprintClosureError);
+    const result = closeSprint(f.data, f.active.id, { [wip.id]: { type: 'carry', sprintId: f.future.id } });
+    expect(result.ticketUpdates.find((t) => t.id === wip.id)?.sprintId).toBe(f.future.id);
+    expect(result.overCapacity).toHaveLength(1);
+    expect(result.overCapacity[0]).toMatchObject({ memberId: f.b.id, sprintId: f.future.id, overBy: 1 });
   });
 
-  it('carryAllDecisions falls back to backlog for work that does not fit', () => {
+  it('carryAllDecisions carries every task, even past capacity', () => {
     const { f, wip, todo, done } = setup();
     f.data.tickets.push(ticket(f, { assigneeId: f.b.id, points: 9, sprintId: f.future.id }));
     const decisions = carryAllDecisions(f.data, f.active.id, f.future.id);
-    expect(decisions[wip.id]).toEqual({ type: 'backlog' });
-    expect(decisions[todo.id]).toEqual({ type: 'carry', sprintId: f.future.id });
-    expect(decisions[done.id]).toEqual({ type: 'carry', sprintId: f.future.id });
+    for (const t of [wip, todo, done]) expect(decisions[t.id]).toEqual({ type: 'carry', sprintId: f.future.id });
+  });
+
+  it('still rejects carrying to a sprint that is not planned', () => {
+    const { f, wip } = setup();
+    expect(() => closeSprint(f.data, f.active.id, { [wip.id]: { type: 'carry', sprintId: f.active.id } })).toThrow(SprintClosureError);
   });
 
   it('only the active sprint can be closed', () => {

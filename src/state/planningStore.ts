@@ -33,6 +33,7 @@ export type OpResult<T = undefined> =
   | { ok: false; error: string; conflicts?: CapacityConflict[] };
 
 const ok = <T>(value: T, message?: string): OpResult<T> => ({ ok: true, value, message });
+const okWithWarning = <T>(value: T, warning?: string): OpResult<T> => ({ ok: true, value, warning });
 const fail = (error: string, conflicts?: CapacityConflict[]): OpResult<never> => ({ ok: false, error, conflicts });
 
 export interface StoreState {
@@ -191,22 +192,19 @@ export class PlanningStore {
       role: (patch.role ?? existing.role).trim(),
       updatedAt: this.now(),
     };
+    // A lower default is allowed even if it leaves this person over capacity in open sprints that use it.
+    const warnings: string[] = [];
     if (patch.defaultCapacity !== undefined) {
-      // A lower default must not strand open sprints that rely on it.
       const members = this.data.members.map((m) => (m.id === id ? next : m));
       for (const sprint of this.data.sprints) {
         if (sprint.status === 'closed' || sprint.capacities[id] !== undefined) continue;
-        const conflicts = findCapacityReductionConflicts({ members, tickets: this.data.tickets }, sprint, sprint.capacities);
-        const c = conflicts.find((x) => x.member.id === id);
-        if (c) {
-          return fail(
-            `${next.name} already has ${formatPoints(c.allocated)} pts allocated in ${sprint.name}. Unassign work first or set a sprint-specific capacity.`,
-          );
-        }
+        const over = findCapacityReductionConflicts({ members, tickets: this.data.tickets }, sprint, sprint.capacities).filter((x) => x.member.id === id);
+        const warning = overAllocatedWarning(over, sprint.name);
+        if (warning) warnings.push(warning);
       }
     }
     this.commit({ put: { members: [next] } });
-    return ok(next);
+    return okWithWarning(next, warnings.join(' ') || undefined);
   }
 
   removeMember(id: ID): OpResult<{ unassigned: number }> {
@@ -357,7 +355,7 @@ export class PlanningStore {
       }
     }
     const conflict = findCapacityConflict(this.data, proposed);
-    return conflict ? { ok: true, value: proposed, warning: overCapacityWarning(conflict) } : ok(proposed);
+    return okWithWarning(proposed, conflict ? overCapacityWarning(conflict) : undefined);
   }
 
   createTicket(input: TicketInput): OpResult<Ticket> {
@@ -495,18 +493,11 @@ export class PlanningStore {
     const error = this.validateSprintFields(merged);
     if (error) return fail(error);
     const capacities = normalizeCapacities(merged.capacities, this.data.members);
+    // Lowering capacity below what's allocated is allowed; it leaves those people over capacity.
     const reductions = findCapacityReductionConflicts(this.data, existing, capacities);
-    if (reductions.length) {
-      const r = reductions[0];
-      return fail(
-        `${r.member.name} already has ${formatPoints(r.allocated)} pts allocated in ${existing.name}, more than the new capacity of ${formatPoints(
-          r.capacity,
-        )}. Reassign or remove ${formatPoints(r.allocated - r.capacity)} pts first.`,
-      );
-    }
     const next: Sprint = { ...existing, ...merged, name: merged.name.trim(), goal: merged.goal.trim(), capacities, updatedAt: this.now() };
     this.commit({ put: { sprints: [next] } });
-    return ok(next);
+    return okWithWarning(next, overAllocatedWarning(reductions, next.name));
   }
 
   activateSprint(id: ID): OpResult<Sprint> {
@@ -515,15 +506,11 @@ export class PlanningStore {
     if (sprint.status !== 'planned') return fail('Only planned sprints can be activated.');
     const active = this.activeSprint;
     if (active) return fail(`${active.name} is still active. Close it before activating ${sprint.name}.`);
-    // Re-check: every allocation must still fit (capacities may have been imported or edited).
+    // An over-allocated sprint can still start; say who is over.
     const reductions = findCapacityReductionConflicts(this.data, sprint, sprint.capacities);
-    if (reductions.length) {
-      const r = reductions[0];
-      return fail(`${r.member.name} is over capacity in ${sprint.name} (${formatPoints(r.allocated)} / ${formatPoints(r.capacity)}).`);
-    }
     const next: Sprint = { ...sprint, status: 'active', updatedAt: this.now() };
     this.commit({ put: { sprints: [next] } });
-    return ok(next);
+    return okWithWarning(next, overAllocatedWarning(reductions, next.name));
   }
 
   closeSprint(id: ID, decisions: Record<ID, CloseDecision>, activateNextId?: ID | null): OpResult<Sprint> {
@@ -544,7 +531,9 @@ export class PlanningStore {
       sprints.push({ ...next, status: 'active', updatedAt: this.now() });
     }
     this.commit({ put: { sprints, tickets: result.ticketUpdates } });
-    return ok(result.sprint);
+    const overSprints = [...new Set(result.overCapacity.map((c) => c.sprintId))].map((id) => this.sprint(id)!);
+    const warnings = overSprints.map((t) => overAllocatedWarning(findCapacityReductionConflicts(this.data, t, t.capacities), t.name)).filter(Boolean);
+    return okWithWarning(result.sprint, warnings.join(' ') || undefined);
   }
 
   /** Delete a planned sprint. Its tickets return to the backlog. */
@@ -597,6 +586,12 @@ export class PlanningStore {
 function overCapacityWarning(c: CapacityConflict): string {
   const after = formatPoints(c.allocatedElsewhere + c.requested);
   return `${c.memberName} is now at ${after} / ${formatPoints(c.capacity)} SP in ${c.sprintName}, ${formatPoints(c.overBy)} SP over capacity.`;
+}
+
+function overAllocatedWarning(over: { member: Member; capacity: number; allocated: number }[], sprintName: string): string | undefined {
+  if (!over.length) return undefined;
+  const who = over.map((r) => `${r.member.name} ${formatPoints(r.allocated)} / ${formatPoints(r.capacity)} SP`).join(', ');
+  return `Over capacity in ${sprintName}: ${who}.`;
 }
 
 function normalizeCapacities(capacities: Record<ID, number>, members: Member[]): Record<ID, number> {

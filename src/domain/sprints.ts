@@ -42,6 +42,8 @@ export type CloseDecision = { type: 'done' } | { type: 'backlog' } | { type: 'ca
 export interface SprintClosureResult {
   sprint: Sprint;
   ticketUpdates: Ticket[];
+  /** Carried-over work that puts someone over capacity in the target sprint. Allowed; reported so the UI can warn. */
+  overCapacity: CapacityConflict[];
 }
 
 export class SprintClosureError extends Error {
@@ -60,8 +62,8 @@ export function sprintTickets(data: Pick<AppData, 'tickets' | 'sections' | 'proj
 
 /**
  * Pure function: compute the closed sprint (with an immutable snapshot) and the
- * ticket updates required to close it. Carry-over is capacity-checked against
- * the target sprint; unfinished work is moved, so it is never duplicated.
+ * ticket updates required to close it. Carry-over may go over capacity in the
+ * target sprint (reported in `overCapacity`); unfinished work is moved, so it is never duplicated.
  */
 export function closeSprint(data: AppData, sprintId: ID, decisions: Record<ID, CloseDecision>, now: Date = new Date()): SprintClosureResult {
   const sprint = data.sprints.find((s) => s.id === sprintId);
@@ -91,17 +93,14 @@ export function closeSprint(data: AppData, sprintId: ID, decisions: Record<ID, C
     }
   }
 
-  // Capacity check carried-over work, applying moves one at a time.
-  const conflicts: CapacityConflict[] = [];
+  // Capacity-check carried-over work, applying moves one at a time. Going over is reported, not refused.
+  const overCapacity: CapacityConflict[] = [];
   let working = data.tickets;
   for (const update of ticketUpdates) {
     if (update.sprintId === null) continue;
     const conflict = findCapacityConflict({ ...data, tickets: working }, update);
-    if (conflict) conflicts.push(conflict);
+    if (conflict) overCapacity.push(conflict);
     working = working.map((t) => (t.id === update.id ? update : t));
-  }
-  if (conflicts.length) {
-    throw new SprintClosureError('Carrying these tasks forward would exceed capacity in the next sprint.', conflicts);
   }
 
   const isDone = (t: Ticket) => decisionFor(t).type === 'done';
@@ -162,24 +161,10 @@ export function closeSprint(data: AppData, sprintId: ID, decisions: Record<ID, C
 
   // Detached plain-JSON copy: later edits to live tickets never change history.
   const frozen: SprintSnapshot = JSON.parse(JSON.stringify(snapshot));
-  return { sprint: { ...sprint, status: 'closed', snapshot: frozen, updatedAt: nowIso }, ticketUpdates };
+  return { sprint: { ...sprint, status: 'closed', snapshot: frozen, updatedAt: nowIso }, ticketUpdates, overCapacity };
 }
 
-/**
- * "Carry all forward" plan: carry every task to `targetSprintId` in priority
- * order while it fits; anything that does not fit returns to the backlog.
- */
+/** "Carry all forward" plan: carry every task to `targetSprintId`, even past capacity (closing reports that). */
 export function carryAllDecisions(data: AppData, sprintId: ID, targetSprintId: ID): Record<ID, CloseDecision> {
-  const decisions: Record<ID, CloseDecision> = {};
-  let working = data.tickets;
-  for (const t of sprintTickets(data, sprintId)) {
-    const moved = { ...t, sprintId: targetSprintId };
-    if (findCapacityConflict({ ...data, tickets: working }, moved)) {
-      decisions[t.id] = { type: 'backlog' };
-    } else {
-      decisions[t.id] = { type: 'carry', sprintId: targetSprintId };
-      working = working.map((w) => (w.id === t.id ? moved : w));
-    }
-  }
-  return decisions;
+  return Object.fromEntries(sprintTickets(data, sprintId).map((t) => [t.id, { type: 'carry', sprintId: targetSprintId } as CloseDecision]));
 }

@@ -10,7 +10,7 @@ React components ──► PlanningStore (application service) ──► Plannin
 ```
 
 - **`src/domain`** holds plain TypeScript with no React and no storage. Every business rule lives here: capacity derivation, conflict detection, story-point parsing, sprint closing and snapshots, and backup validation.
-- **`src/state/planningStore.ts`** runs operations such as `createTicket`, `updateTicket`, `closeSprint`, `clearWorkspace`, `loadDemoData` and `deleteSection`. Each one validates against the domain rules and returns `{ ok, value, warning? } | { ok: false, error, conflicts }`. Task edits that put someone over capacity succeed with a `warning`; sprint operations (lowering capacity, activating, carrying forward) still refuse with `conflicts`. Accepted changes update in-memory state straight away and are then written through the repository in a serialized queue. If a write fails, the store reloads from the repository. The code and data model still say "ticket"; the UI says "task".
+- **`src/state/planningStore.ts`** runs operations such as `createTicket`, `updateTicket`, `closeSprint`, `clearWorkspace`, `loadDemoData` and `deleteSection`. Each one validates against the domain rules and returns `{ ok, value, warning? } | { ok: false, error, conflicts }`. Anything that leaves someone over capacity (task edits, lowering capacity, activating a sprint, carrying work forward) succeeds with a `warning` naming who is over; nothing is refused for capacity. Accepted changes update in-memory state straight away and are then written through the repository in a serialized queue. If a write fails, the store reloads from the repository. The code and data model still say "ticket"; the UI says "task".
 - **`src/data/repository.ts`** is the persistence contract: `load()`, `apply(changeSet)` (atomic) and `replaceAll(data)`. To move to a backend, implement `HttpPlanningRepository` with the same three methods (for example `GET /workspace`, `POST /changes`, `PUT /workspace`). No component or domain code needs to change.
 
 ## Data model
@@ -26,7 +26,7 @@ Schema version: **2**.
 | `Sprint` | `id`, `name`, `goal`, `startDate`, `endDate`, `status` (planned/active/closed), `capacities` (per-member overrides), `snapshot?` |
 | `SprintSnapshot` | Immutable JSON copy taken at close: committed, completed (done) and incomplete (not-done) SP, per-person capacity, planned and completed SP, and each task's outcome (`completed` / `returned_to_backlog` / `carried_forward`) |
 
-Tasks are planning-only. There is no work status, readiness, ticket type, acceptance criteria or notes (removed in schema v2). Because nothing tracks progress, the person closing a sprint decides each task's outcome (see `CloseDecision` in `src/domain/sprints.ts`: done, backlog or carry to a planned sprint; `carryAllDecisions` builds the "Carry all" plan in priority order and sends what doesn't fit to the backlog).
+Tasks are planning-only. There is no work status, readiness, ticket type, acceptance criteria or notes (removed in schema v2). Because nothing tracks progress, the person closing a sprint decides each task's outcome (see `CloseDecision` in `src/domain/sprints.ts`: done, backlog or carry to a planned sprint; `carryAllDecisions` builds the "Carry all" plan, which carries every task; carry-over that goes over capacity is returned in `overCapacity`, not refused).
 
 Priority (section) and lifecycle (project) are independent dimensions. Tasks in closed sprints are history: they are hidden from the board and shown in Sprint History.
 

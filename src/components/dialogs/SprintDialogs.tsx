@@ -134,7 +134,7 @@ export function SprintDialog({ open, sprint, onOpenChange }: { open: boolean; sp
                         value={cap}
                         onChange={(e) => setCaps((c) => ({ ...c, [m.id]: Math.min(MAX_MEMBER_CAPACITY, Math.max(0, Number(e.target.value) || 0)) }))}
                         aria-label={`${m.name} capacity in SP`}
-                        className={cn('h-7 w-16 text-right tabular', allocated > cap && 'border-red-400 text-red-700 dark:text-red-300')}
+                        className={cn('h-7 w-16 text-right tabular', allocated > cap && 'border-amber-400 text-amber-700 dark:text-amber-300')}
                       />
                     </div>
                   );
@@ -331,9 +331,9 @@ export function CloseSprintDialog({ sprint, onOpenChange }: { sprint: Sprint | n
           )}
 
           {conflicts.length > 0 && (
-            <div role="alert" className="space-y-1 rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-3 text-[12.5px] text-red-800 dark:text-red-300">
+            <div role="status" className="space-y-1 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-3 text-[12.5px] text-amber-900 dark:text-amber-200">
               <div className="flex items-center gap-1.5 font-medium">
-                <AlertTriangle className="size-4" /> Carry-over exceeds capacity in the next sprint
+                <AlertTriangle className="size-4" /> Carry-over goes over capacity in the next sprint. You can still close.
               </div>
               {conflicts.map((c) => (
                 <p key={c}>{c}</p>
@@ -358,7 +358,7 @@ export function CloseSprintDialog({ sprint, onOpenChange }: { sprint: Sprint | n
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={confirmClose} disabled={conflicts.length > 0}>
+          <Button onClick={confirmClose}>
             Close sprint
           </Button>
         </DialogFooter>

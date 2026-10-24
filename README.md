@@ -20,7 +20,7 @@ Other commands:
 | Command | What it does |
 |---|---|
 | `npm run dev` | Start the dev server on port 5173 |
-| `npm test` | Run the Vitest suite (42 tests in 4 files: business rules, persistence, import/export, board filters) |
+| `npm test` | Run the Vitest suite (45 tests in 4 files: business rules, persistence, import/export, board filters) |
 | `npm run typecheck` | TypeScript check (`tsc --noEmit`) |
 | `npm run build` | Typecheck, then build a production bundle to `dist/` |
 | `npm run preview` | Serve the production build locally |
@@ -54,9 +54,9 @@ Planning a sprint:
 5. **Close sprint** asks what happened to each task, since SprintFlow has no status to infer it from:
    - **Done** (default): the task stays with the closed sprint as completed history.
    - **Backlog**: the task returns to the backlog.
-   - **Carry forward**: the task moves (never copies) to a planned sprint, checked against that sprint's capacity.
+   - **Carry forward**: the task moves (never copies) to a planned sprint. If that puts someone over capacity there, the dialog warns you but still lets you close.
 
-   Bulk buttons: **All done**, **All to backlog** and **Carry all**. Carry all goes in priority order and sends whatever doesn't fit to the backlog. Closing saves a read-only snapshot with committed, done and not-done SP, and planned/completed SP per person.
+   Bulk buttons: **All done**, **All to backlog** and **Carry all**. Carry all moves every task to the next planned sprint. Closing saves a read-only snapshot with committed, done and not-done SP, and planned/completed SP per person.
 6. Closed sprints' tasks no longer appear on the board. **Sprint history** shows the snapshot and what happened to every task.
 
 Shortcuts and tips:
@@ -74,7 +74,7 @@ All capacity numbers are calculated from the tasks every time; no "remaining cap
 - Changing the assignee moves the SP from one person to the other. Removing a task from the sprint frees its SP.
 - A planned sprint's tasks only count toward that sprint's projected capacity.
 - A person can go over capacity. It's shown as a warning, never blocked.
-- Capacity can be lowered per sprint for leave (**Edit sprint**), but never raised above 10. You can't lower it below what is already allocated, activate a planned sprint where someone is over capacity, or carry a task forward into a sprint where it won't fit.
+- Capacity can be lowered per sprint for leave (**Edit sprint**) or by default (**Team settings**), but never raised above 10. Lowering it below what's already allocated, activating a sprint where someone is over capacity, and carrying work into a full sprint are all allowed, with an **Over capacity** warning naming who is over.
 - Sprint tasks with no assignee or no SP are allowed, but they're flagged as **incomplete planning** and are not counted as planned work.
 - A task belongs to at most one sprint at a time (`ticket.sprintId`), so it can't be planned twice.
 

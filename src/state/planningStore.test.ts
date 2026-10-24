@@ -135,20 +135,50 @@ describe('planning flow through the store', () => {
     expect(used(store, a.id, future.id).used).toBe(6);
   });
 
-  it('reducing capacity for leave is enforced and cannot strand allocations', async () => {
+  it('lowering capacity below what is allocated is allowed with a warning; above 10 is still invalid', async () => {
     const { store, project, a } = await emptyStore();
     const active = store.activeSprint!;
-    expect(store.updateSprint(active.id, { capacities: { [a.id]: 6 } }).ok).toBe(true);
+    const leave = store.updateSprint(active.id, { capacities: { [a.id]: 6 } });
+    expect(leave.ok && leave.warning).toBeFalsy();
     expect(used(store, a.id).capacity).toBe(6);
     store.createTicket({ projectId: project.id, title: 'y', assigneeId: a.id, points: 5, sprintId: active.id });
-    expect(store.updateSprint(active.id, { capacities: { [a.id]: 4 } }).ok).toBe(false);
+    const lower = store.updateSprint(active.id, { capacities: { [a.id]: 4 } });
+    expect(lower.ok).toBe(true);
+    if (lower.ok) expect(lower.warning).toBe('Over capacity in Sprint 1: Engineer A 5 / 4 SP.');
+    expect(used(store, a.id)).toMatchObject({ capacity: 4, used: 5, state: 'over' });
     expect(store.updateSprint(active.id, { capacities: { [a.id]: 12 } }).ok).toBe(false);
+  });
+
+  it('lowering a default capacity below open allocations is allowed with a warning', async () => {
+    const { store, project, a } = await emptyStore();
+    store.createTicket({ projectId: project.id, title: 'y', assigneeId: a.id, points: 5, sprintId: store.activeSprint!.id });
+    const res = store.updateMember(a.id, { defaultCapacity: 3 });
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.warning).toBe('Over capacity in Sprint 1: Engineer A 5 / 3 SP.');
   });
 
   it('only one sprint can be active at a time', async () => {
     const { store, future } = await emptyStore();
     const res = store.activateSprint(future.id);
     expect(res.ok).toBe(false);
+  });
+
+  it('activates an over-allocated sprint and closes with over-capacity carry-over, warning both times', async () => {
+    const { store, project, a, future } = await emptyStore();
+    const active = store.activeSprint!;
+    store.createTicket({ projectId: project.id, title: 'Next', assigneeId: a.id, points: 8, sprintId: future.id });
+    const wip = store.createTicket({ projectId: project.id, title: 'WIP', assigneeId: a.id, points: 4, sprintId: active.id });
+    if (!wip.ok) throw new Error(wip.error);
+
+    const closed = store.closeSprint(active.id, { [wip.value.id]: { type: 'carry', sprintId: future.id } });
+    expect(closed.ok).toBe(true);
+    if (closed.ok) expect(closed.warning).toBe('Over capacity in Sprint 2: Engineer A 12 / 10 SP.');
+    expect(store.data.tickets.find((t) => t.id === wip.value.id)!.sprintId).toBe(future.id);
+
+    const activated = store.activateSprint(future.id);
+    expect(activated.ok).toBe(true);
+    if (activated.ok) expect(activated.warning).toBe('Over capacity in Sprint 2: Engineer A 12 / 10 SP.');
+    expect(store.activeSprint?.id).toBe(future.id);
   });
 
   it('closing a sprint preserves the snapshot and carries work forward without duplication', async () => {
