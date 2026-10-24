@@ -6,8 +6,6 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Inter Variable"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        tight: ['"Inter Tight Variable"', '"Inter Tight"', '"Inter Variable"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono Variable"', '"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -20,15 +18,6 @@ export default {
         muted: { DEFAULT: 'hsl(var(--muted))', foreground: 'hsl(var(--muted-foreground))' },
         accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
         destructive: { DEFAULT: 'hsl(var(--destructive))', foreground: 'hsl(var(--destructive-foreground))' },
-        // Cut Line Ledger: amber cut line and warning-coloured planning flags.
-        cut: {
-          DEFAULT: '#F2B13C',
-          ink: '#1A1404',
-          bg: 'hsl(var(--cut-bg))',
-          text: 'hsl(var(--cut-text))',
-          strong: 'hsl(var(--cut-strong))',
-        },
-        flag: { DEFAULT: 'hsl(var(--flag))', line: 'hsl(var(--flag-line))', bg: 'hsl(var(--flag-bg))' },
       },
       borderRadius: {
         lg: '10px',

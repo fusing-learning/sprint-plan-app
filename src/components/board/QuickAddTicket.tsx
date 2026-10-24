@@ -3,21 +3,22 @@ import { CornerDownLeft, Plus } from 'lucide-react';
 import type { Project } from '@/domain/types';
 import { report, useData, useStore, useUi } from '@/state/react';
 import { cn } from '@/lib/utils';
-import { Kbd, Tooltip } from '../ui/misc';
+import { Kbd } from '../ui/misc';
 
 export function QuickAddTicket({ project, planningSprintId }: { project: Project; planningSprintId: string | null }) {
   const store = useStore();
   const data = useData();
   const ui = useUi();
   const [title, setTitle] = React.useState('');
-  const [toSprint, setToSprint] = React.useState(false);
   const [focused, setFocused] = React.useState(false);
   const planning = data.sprints.find((s) => s.id === planningSprintId);
   const inputId = `quick-add-${project.id}`;
 
   const submit = () => {
     if (!title.trim()) return;
-    const result = store.createTicket({ projectId: project.id, title, sprintId: toSprint && planning ? planning.id : null });
+    // New tasks join the sprint being planned, or the backlog when that's what's on screen.
+    const sprintId = ui.filters.scope === 'backlog' ? null : (planning?.id ?? null);
+    const result = store.createTicket({ projectId: project.id, title, sprintId });
     if (report(result)) setTitle('');
   };
 
@@ -43,14 +44,6 @@ export function QuickAddTicket({ project, planningSprintId }: { project: Project
         placeholder="Add a task…"
         className="h-7 min-w-0 flex-1 bg-transparent text-[13px] placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0"
       />
-      {planning && (focused || title) && (
-        <Tooltip content={`New ticket goes straight into ${planning.name}`}>
-          <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[12px] text-muted-foreground" onMouseDown={(e) => e.preventDefault()}>
-            <input type="checkbox" checked={toSprint} onChange={(e) => setToSprint(e.target.checked)} className="size-3.5 accent-[hsl(var(--primary))]" />
-            Add to {planning.name}
-          </label>
-        </Tooltip>
-      )}
       {title ? (
         <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
           <Kbd>

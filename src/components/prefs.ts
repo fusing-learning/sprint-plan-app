@@ -1,30 +1,5 @@
 import * as React from 'react';
 
-/** Per-browser UI preferences kept in localStorage. Losing them only resets the view. */
-function useLocalPref<T extends string>(key: string, read: () => T): [T, (v: T) => void] {
-  const [value, setValue] = React.useState<T>(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw) return JSON.parse(raw) as T;
-    } catch {
-      /* fall through to the default */
-    }
-    return read();
-  });
-  const set = React.useCallback(
-    (v: T) => {
-      setValue(v);
-      try {
-        localStorage.setItem(key, JSON.stringify(v));
-      } catch {
-        /* per-viewer convenience only */
-      }
-    },
-    [key],
-  );
-  return [value, set];
-}
-
 export type Theme = 'light' | 'dark';
 
 // The theme lives on <html class="dark">, set before first paint by the script in index.html
@@ -54,11 +29,4 @@ function subscribeTheme(listener: () => void) {
 
 export function useTheme(): [Theme, (t: Theme) => void] {
   return [React.useSyncExternalStore(subscribeTheme, readTheme), setTheme];
-}
-
-export type PlanView = 'ledger' | 'board';
-
-export function usePlanView(): [PlanView, (v: PlanView) => void] {
-  const [view, setView] = useLocalPref<PlanView>('sf.view', () => 'ledger');
-  return [view === 'board' ? 'board' : 'ledger', setView];
 }

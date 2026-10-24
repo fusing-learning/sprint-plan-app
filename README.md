@@ -20,7 +20,7 @@ Other commands:
 | Command | What it does |
 |---|---|
 | `npm run dev` | Start the dev server on port 5173 |
-| `npm test` | Run the Vitest suite (46 tests in 4 files: business rules, persistence, import/export, cut-line ledger) |
+| `npm test` | Run the Vitest suite (42 tests in 4 files: business rules, persistence, import/export, board filters) |
 | `npm run typecheck` | TypeScript check (`tsc --noEmit`) |
 | `npm run build` | Typecheck, then build a production bundle to `dist/` |
 | `npm run preview` | Serve the production build locally |
@@ -34,21 +34,22 @@ Other commands:
 
 ## Planning workflow
 
-The layout is a left sidebar, a main panel and a right capacity column. The header switches the main panel between the **Ledger** and the **Board**, and between **Light** and **Dark** themes. Both choices are remembered in this browser.
+The layout is a left sidebar, a main panel and a right capacity column. The header has a **Light / Dark** theme switch, remembered in this browser (until you pick one, it follows your system setting).
 
-- **Sidebar:** search (press `/`), **Active sprint / Future sprints / Sprint history**, **Show** (All tasks / In sprint / Backlog / Archived projects), a **People** list with used/capacity (click a person to filter to their tasks), **Unassigned**, a **Sections** jump list, **Team settings** and **Import / Export / Clear**. The sidebar can be hidden.
+- **Sidebar:** search (press `/`), **Active sprint / Future sprints / Sprint history**, **Show** (In sprint / Backlog / Incomplete planning / Archived projects), a **People** list with used/capacity (click a person to filter to their tasks), **Unassigned**, a **Sections** jump list, **Team settings** and **Import / Export / Clear**. The sidebar can be hidden.
 - **Main panel:** a header with breadcrumb, sprint switcher, status, dates and **Edit / Close / Activate sprint** and **New sprint**. Below it, a filter-chip bar (for example "Assignee is Engineer A ×"), a **Filter** menu, an **Expand** menu (expand/collapse all sections and all projects), **+ Section** and **New project**, then the board.
 - **Capacity column:** see [Capacity rules](#capacity-rules).
 
 Planning a sprint:
 
-1. Open **Active sprint**. Start at **P0 — Executive Priority** and work down the sections.
+1. Open **Active sprint**. The board shows the tasks in that sprint, and every one of them counts. Start at **P0 — Executive Priority** and work down the sections.
 2. In each project:
-   - Add a task with the inline add box (press Enter), or use **+** / **Full form** for title, description, project, assignee, SP and sprint.
+   - Add a task with the inline add box (press Enter), or use **+** / **Full form** for title, description, project, assignee, SP and sprint. New tasks go into the sprint you're looking at (or the backlog, when **Show → Backlog** is selected).
    - Pick the assignee on the row. The picker shows how much capacity each person has left.
    - Type story points into the pill-shaped **SP** field. Any number greater than 0 and up to 10 is allowed (rounded to 2 decimals); empty means unestimated. **Enter** or leaving the field commits, **Escape** reverts, and invalid input shows an error and reverts.
-   - Click the checkbox at the start of a row to move the task in or out of the sprint you're planning. Sprint tasks get an indigo tint and an accent bar on the left.
-3. Capacity updates as soon as you change something. An assignment that would push someone over capacity is refused, and a message says how many SP they have left.
+   - To take a task out of the sprint or bring one in, use the row's **⋯ → Move to sprint** (Backlog or another open sprint). Backlog tasks are listed under **Show → Backlog**, and a planned sprint's tasks under **Future sprints**.
+3. Capacity updates as soon as you change something. Going over someone's capacity is allowed: you get an **Over capacity** warning saying by how much, the assignee picker shows "over by N SP", and the capacity column turns that person red.
+   - **Show → Incomplete planning** lists the sprint's tasks that are missing an assignee or SP.
 4. Use **Future sprints** to plan ahead. The capacity column then shows **Projected capacity** for that sprint, which does not affect the active sprint.
 5. **Close sprint** asks what happened to each task, since SprintFlow has no status to infer it from:
    - **Done** (default): the task stays with the closed sprint as completed history.
@@ -64,17 +65,6 @@ Shortcuts and tips:
 - Archived projects are hidden from the board. View them with the sidebar **Archived projects** item (or **Filter → Show archived projects**).
 - Drag the handles to reorder sections, projects and tasks. Each item's **⋯** menu also has **Move up / Move down**, and keyboard drag works too: focus a handle, press Space, use the arrow keys, then press Space again.
 
-### Cut Line Ledger
-
-The ledger is a dense table of every task ranked top-down: section (P0 first), then project, then task, in the same order as the board. Columns are rank, task, owner, SP and a running total against the team's capacity.
-
-- Going down the list, each task with an owner and SP is counted until one would go past the team's capacity or its owner's capacity for that sprint. An amber **cut line** sits above that task and says why, for example "Next task needs 3 SP from Engineer C, who has 2 left." Rows below it are dimmed.
-- Only backlog tasks and tasks already in the sprint you're planning are ranked. Tasks in another open sprint show that sprint's name and are skipped. Projects that are on hold, completed or archived are not ranked; a section whose projects are all like that shows "Not this sprint" and starts collapsed.
-- Tasks above the line without an owner or SP are flagged **Not counted** and never move the line.
-- The line is guidance. It never changes which tasks are in the sprint: tick the checkbox on a row as before, or use **Fill to line** to add every counted task above the line that isn't in the sprint yet. Each one still goes through the normal capacity check, so a task that doesn't fit is refused with the usual message.
-- The header shows SP above the line / capacity, SP and task count below the line, flags and what's actually in the sprint. Person cards show SP above the line for each person (click to filter), and the **Incomplete planning** card filters to the flagged tasks.
-- Re-rank with the same drag handles and **Move up / Move down** menu items as the board. Search, filters and future sprints (projected capacity) work the same way. On narrow screens the table scrolls sideways inside its own box.
-
 ## Capacity rules
 
 All capacity numbers are calculated from the tasks every time; no "remaining capacity" value is stored.
@@ -83,7 +73,8 @@ All capacity numbers are calculated from the tasks every time; no "remaining cap
 - A task uses capacity only when it is in that sprint **and** has an assignee **and** has an SP estimate.
 - Changing the assignee moves the SP from one person to the other. Removing a task from the sprint frees its SP.
 - A planned sprint's tasks only count toward that sprint's projected capacity.
-- Capacity can be lowered per sprint for leave (**Edit sprint**), but never raised above 10. You can't lower it below what is already allocated.
+- A person can go over capacity. It's shown as a warning, never blocked.
+- Capacity can be lowered per sprint for leave (**Edit sprint**), but never raised above 10. You can't lower it below what is already allocated, activate a planned sprint where someone is over capacity, or carry a task forward into a sprint where it won't fit.
 - Sprint tasks with no assignee or no SP are allowed, but they're flagged as **incomplete planning** and are not counted as planned work.
 - A task belongs to at most one sprint at a time (`ticket.sprintId`), so it can't be planned twice.
 

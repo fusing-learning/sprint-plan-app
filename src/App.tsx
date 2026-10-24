@@ -8,12 +8,11 @@ import { CloseSprintDialog, SprintDialog } from './components/dialogs/SprintDial
 import { DataDialog, TeamDialog } from './components/dialogs/TeamAndDataDialogs';
 import { TicketDialog } from './components/dialogs/TicketDialog';
 import { HistoryView } from './components/history/HistoryView';
-import { Ledger } from './components/ledger/Ledger';
 import { MainHeader } from './components/layout/MainHeader';
 import { Sidebar } from './components/layout/Sidebar';
 import { Dialog, DialogTitle } from './components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { usePlanView, useTheme } from './components/prefs';
+import { useTheme } from './components/prefs';
 
 export default function App() {
   const ui = useUi();
@@ -23,7 +22,6 @@ export default function App() {
   const [dataOpen, setDataOpen] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [capacityOpen, setCapacityOpen] = React.useState(false);
-  const [view, setView] = usePlanView();
   const [theme, setTheme] = useTheme();
 
   const capacity = <CapacityPanel onEditSprint={(sprint) => setSprintDialog({ sprint })} onCreateSprint={() => setSprintDialog({ sprint: null })} />;
@@ -44,19 +42,15 @@ export default function App() {
             onCloseSprint={setClosing}
             onOpenMenu={() => setMenuOpen(true)}
             onOpenCapacity={() => setCapacityOpen(true)}
-            view={view}
-            onViewChange={setView}
             theme={theme}
             onThemeChange={setTheme}
           />
           <div className="flex min-h-0 flex-1">
-            <main className="min-w-0 flex-1" aria-label={ui.mode === 'history' ? 'Sprint history' : view === 'ledger' ? 'Cut line ledger' : 'Planning board'}>
+            <main className="min-w-0 flex-1" aria-label={ui.mode === 'history' ? 'Sprint history' : 'Planning board'}>
               {ui.mode === 'history' ? (
                 <div className="h-full overflow-y-auto scrollbar-thin">
                   <HistoryView />
                 </div>
-              ) : view === 'ledger' ? (
-                <Ledger onCreateSprint={() => setSprintDialog({ sprint: null })} />
               ) : (
                 <Board />
               )}

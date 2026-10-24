@@ -21,7 +21,7 @@ import {
 import { formatPoints } from '@/domain/capacity';
 import { PROJECT_LIFECYCLE_LABEL, type Project, type Ticket } from '@/domain/types';
 import { report, useData, useStore, useUi } from '@/state/react';
-import { mergeVisibleOrder, sortedSections, sprintPoints } from '@/state/selectors';
+import { hasActiveFilters, mergeVisibleOrder, sortedSections, sprintPoints } from '@/state/selectors';
 import { arrayMove, cn } from '@/lib/utils';
 import { LIFECYCLE_DOT, Pill, SectionGlyph } from '../meta';
 import { useConfirm } from '../ui/confirm';
@@ -133,7 +133,7 @@ export function ProjectCard({ project, allTickets, visibleTickets, planningSprin
             </Tooltip>
           )}
           <span className="w-16 text-right text-[12px] text-muted-foreground tabular">
-            {allTickets.length} task{allTickets.length === 1 ? '' : 's'}
+            {visibleTickets.length} task{visibleTickets.length === 1 ? '' : 's'}
           </span>
         </div>
         {planning && (
@@ -225,7 +225,11 @@ export function ProjectCard({ project, allTickets, visibleTickets, planningSprin
               </SortableContext>
             </DndContext>
           ) : (
-            allTickets.length > 0 && <div className="py-2 pl-9 text-[12.5px] text-muted-foreground">No tasks match the current filters.</div>
+            allTickets.length > 0 && (
+              <div className="py-2 pl-9 text-[12.5px] text-muted-foreground">
+                {hasActiveFilters(ui.filters, ui.search) ? 'No tasks match the current filters.' : `No tasks in ${planning?.name ?? 'this sprint'}. Find the rest under Backlog or Future sprints.`}
+              </div>
+            )
           )}
           <QuickAddTicket project={project} planningSprintId={planningSprintId} />
         </div>

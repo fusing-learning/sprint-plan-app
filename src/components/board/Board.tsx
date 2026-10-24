@@ -1,18 +1,33 @@
 import * as React from 'react';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { ChevronsDownUp, ChevronsUpDown, Layers, Plus, SearchX } from 'lucide-react';
+import { Archive, CalendarCheck2, ChevronsDownUp, Inbox, ChevronsUpDown, Layers, ListFilter, Plus, SearchX, UserX, Users, X } from 'lucide-react';
 import type { Project, Section } from '@/domain/types';
-import { report, useData, useStore, useUi, usePlanningSprint } from '@/state/react';
-import { groupProjects, groupTickets, hasActiveFilters, isOnBoard, matchesSearch, sortedSections, sprintPoints, ticketMatches } from '@/state/selectors';
-import { arrayMove } from '@/lib/utils';
+import { report, useData, useStore, useUi, usePlanningSprint, type ScopeFilter } from '@/state/react';
+import { groupProjects, groupTickets, hasActiveFilters, isOnBoard, matchesSearch, sortedMembers, sortedSections, sprintPoints, ticketMatches } from '@/state/selectors';
+import { arrayMove, cn } from '@/lib/utils';
+import { Avatar } from '../meta';
 import { Button } from '../ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import { DeleteSectionDialog, SectionDialog } from '../dialogs/SectionDialogs';
 import { ProjectDialog } from '../dialogs/ProjectDialog';
 import { SectionBlock } from './SectionBlock';
 import { verticalOnly } from './dnd';
-import { FilterBar, useClearFilters } from './FilterBar';
+
+const SCOPE_LABEL: Record<ScopeFilter, string> = { sprint: 'In sprint', backlog: 'Backlog' };
+const GAP_LABEL = { unassigned: 'No assignee', unestimated: 'No SP', incomplete: 'No assignee or SP' } as const;
 
 export function Board() {
   const data = useData();
@@ -38,7 +53,7 @@ export function Board() {
   }, [data, closedSprintIds]);
   const filtersActive = hasActiveFilters(filters, search);
   const query = search.trim().toLowerCase();
-  const onlySearch = !!query && filters.scope === 'all' && filters.assignee === 'all' && filters.gap === 'none';
+  const onlySearch = !!query && filters.scope === 'sprint' && filters.assignee === 'all' && filters.gap === 'none';
 
   const view = sections.map((section) => {
     const all = projectsBySection.get(section.id) ?? [];
@@ -80,47 +95,123 @@ export function Board() {
 
   const sectionIds = sections.map((s) => s.id);
   const projectIds = data.projects.map((p) => p.id);
-  const clearAll = useClearFilters();
+  const members = sortedMembers(data);
+  const assignee = members.find((m) => m.id === filters.assignee);
+  const clearAll = () => {
+    ui.resetFilters();
+    ui.setSearch('');
+    ui.setFilters({ showArchived: false });
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <FilterBar>
+      {/* Filter bar */}
+      <div className="flex min-h-11 shrink-0 flex-wrap items-center gap-1.5 border-b px-3 py-1.5" role="toolbar" aria-label="Board filters">
+        {filters.scope === 'backlog' && <FilterChip label="Scope" value="Backlog" icon={<Inbox />} onClear={() => ui.setFilters({ scope: 'sprint' })} />}
+        {filters.assignee !== 'all' && (
+          <FilterChip
+            label="Assignee"
+            value={assignee?.name ?? 'Unassigned'}
+            icon={assignee ? <Avatar member={assignee} size="xs" /> : <UserX />}
+            onClear={() => ui.setFilters({ assignee: 'all' })}
+          />
+        )}
+        {filters.gap !== 'none' && (
+          <FilterChip label="Planning" value={GAP_LABEL[filters.gap]} icon={<span className="size-2 rounded-full bg-orange-500" />} onClear={() => ui.setFilters({ gap: 'none' })} />
+        )}
+        {filters.showArchived && <FilterChip label="Projects" value="Archived" icon={<Archive />} onClear={() => ui.setFilters({ showArchived: false })} />}
+        {query && <FilterChip label="Search" value={`“${search.trim()}”`} icon={<SearchX />} onClear={() => ui.setSearch('')} />}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground" aria-label="Expand or collapse">
-              <ChevronsUpDown /> <span className="hidden sm:inline">Expand</span>
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
+              {filtersActive || filters.showArchived ? <Plus /> : <ListFilter />}
+              {filtersActive || filters.showArchived ? '' : 'Filter'}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel>Sections</DropdownMenuLabel>
-            <DropdownMenuItem onSelect={() => ui.setSectionsCollapsed(sectionIds, false)}>
-              <ChevronsUpDown /> Expand all sections
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => ui.setSectionsCollapsed(sectionIds, true)}>
-              <ChevronsDownUp /> Collapse all sections
-            </DropdownMenuItem>
+          <DropdownMenuContent align="start" className="w-52">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <CalendarCheck2 /> Scope
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-44">
+                <DropdownMenuRadioGroup value={filters.scope} onValueChange={(v) => ui.setFilters({ scope: v as ScopeFilter })}>
+                  {(Object.keys(SCOPE_LABEL) as ScopeFilter[]).map((s) => (
+                    <DropdownMenuRadioItem key={s} value={s}>
+                      {s === 'sprint' && planning ? `In ${planning.name}` : SCOPE_LABEL[s]}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Users /> Assignee
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-48">
+                <DropdownMenuRadioGroup value={filters.assignee} onValueChange={(v) => ui.setFilters({ assignee: v })}>
+                  <DropdownMenuRadioItem value="all">Everyone</DropdownMenuRadioItem>
+                  {members.map((m) => (
+                    <DropdownMenuRadioItem key={m.id} value={m.id}>
+                      <Avatar member={m} size="xs" /> {m.name}
+                    </DropdownMenuRadioItem>
+                  ))}
+                  <DropdownMenuRadioItem value="unassigned">
+                    <UserX /> Unassigned
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Projects</DropdownMenuLabel>
-            <DropdownMenuItem
-              onSelect={() => {
-                ui.setSectionsCollapsed(sectionIds, false);
-                ui.setExpandedMany(projectIds, true);
-              }}
-            >
-              <ChevronsUpDown /> Expand all projects
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => ui.setExpandedMany(projectIds, false)}>
-              <ChevronsDownUp /> Collapse all projects
+            <DropdownMenuItem onSelect={() => ui.setFilters({ showArchived: !filters.showArchived })}>
+              <Archive /> {filters.showArchived ? 'Show active projects' : 'Show archived projects'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setSectionDialog({ section: null })}>
-          <Layers /> <span className="hidden sm:inline">Section</span>
-        </Button>
-        <Button size="sm" onClick={() => setProjectDialog({ project: null, sectionId: sections[0]?.id })} disabled={!sections.length}>
-          <Plus /> New project
-        </Button>
-      </FilterBar>
+        {(filtersActive || filters.showArchived) && (
+          <button type="button" onClick={clearAll} className="text-[12.5px] text-muted-foreground hover:text-foreground">
+            Clear
+          </button>
+        )}
+
+        <div className="ml-auto flex items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground" aria-label="Expand or collapse">
+                <ChevronsUpDown /> <span className="hidden sm:inline">Expand</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>Sections</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => ui.setSectionsCollapsed(sectionIds, false)}>
+                <ChevronsUpDown /> Expand all sections
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => ui.setSectionsCollapsed(sectionIds, true)}>
+                <ChevronsDownUp /> Collapse all sections
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Projects</DropdownMenuLabel>
+              <DropdownMenuItem
+                onSelect={() => {
+                  ui.setSectionsCollapsed(sectionIds, false);
+                  ui.setExpandedMany(projectIds, true);
+                }}
+              >
+                <ChevronsUpDown /> Expand all projects
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => ui.setExpandedMany(projectIds, false)}>
+                <ChevronsDownUp /> Collapse all projects
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setSectionDialog({ section: null })}>
+            <Layers /> <span className="hidden sm:inline">Section</span>
+          </Button>
+          <Button size="sm" onClick={() => setProjectDialog({ project: null, sectionId: sections[0]?.id })} disabled={!sections.length}>
+            <Plus /> New project
+          </Button>
+        </div>
+      </div>
 
       {/* Board */}
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin" data-testid="board-scroll">
@@ -198,6 +289,22 @@ export function Board() {
         }}
       />
     </div>
+  );
+}
+
+function FilterChip({ label, value, icon, onClear }: { label: string; value: string; icon: React.ReactNode; onClear: () => void }) {
+  return (
+    <span className="inline-flex h-7 items-center overflow-hidden rounded-md border bg-surface text-[12.5px] shadow-sm">
+      <span className="flex h-full items-center gap-1.5 border-r px-2 text-muted-foreground [&_svg]:size-3.5">
+        {icon}
+        {label}
+      </span>
+      <span className="border-r px-2 text-muted-foreground">is</span>
+      <span className="px-2 font-medium">{value}</span>
+      <button type="button" onClick={onClear} className={cn('flex h-full items-center border-l px-1.5 text-muted-foreground hover:bg-muted hover:text-foreground')} aria-label={`Remove ${label} filter`}>
+        <X className="size-3.5" />
+      </button>
+    </span>
   );
 }
 

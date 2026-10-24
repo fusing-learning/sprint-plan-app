@@ -2,8 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Toaster } from 'sonner';
 import '@fontsource-variable/inter';
-import '@fontsource-variable/inter-tight';
-import '@fontsource-variable/jetbrains-mono';
 import './index.css';
 import App from './App';
 import { DexiePlanningRepository } from './data/dexieRepository';

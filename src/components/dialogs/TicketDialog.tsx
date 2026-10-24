@@ -47,7 +47,13 @@ function TicketForm({ existing, createProjectId }: { existing?: Ticket; createPr
   const store = useStore();
   const ui = useUi();
   const confirm = useConfirm();
-  const [draft, setDraft] = React.useState<Ticket>(() => existing ?? blankTicket(createProjectId!, `${data.meta.ticketKeyPrefix}-${data.meta.nextTicketNumber}`));
+  const [draft, setDraft] = React.useState<Ticket>(
+    () =>
+      existing ?? {
+        ...blankTicket(createProjectId!, `${data.meta.ticketKeyPrefix}-${data.meta.nextTicketNumber}`),
+        sprintId: ui.filters.scope === 'backlog' ? null : ui.planningSprintId,
+      },
+  );
   const [pointsText, setPointsText] = React.useState(existing?.points != null ? formatPoints(existing.points) : '');
   const [error, setError] = React.useState<string | null>(null);
   const isNew = !existing;
@@ -223,7 +229,7 @@ function TicketForm({ existing, createProjectId }: { existing?: Ticket; createPr
           </PropRow>
 
           {capacityPreview && (
-            <div className={cn('rounded-lg border p-2.5 text-[12px]', conflict ? 'border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 text-red-800 dark:text-red-300' : 'border-indigo-100 dark:border-indigo-500/30 bg-indigo-50/70 dark:bg-indigo-500/10 text-indigo-900 dark:text-indigo-200')}>
+            <div className={cn('rounded-lg border p-2.5 text-[12px]', conflict ? 'border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200' : 'border-indigo-100 dark:border-indigo-500/30 bg-indigo-50/70 dark:bg-indigo-500/10 text-indigo-900 dark:text-indigo-200')}>
               <div className="flex items-center justify-between font-medium">
                 <span className="truncate">
                   {assignee!.name} · {currentSprint!.name}
@@ -234,11 +240,11 @@ function TicketForm({ existing, createProjectId }: { existing?: Ticket; createPr
               </div>
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/80 dark:bg-white/10">
                 <div
-                  className={cn('h-full rounded-full transition-all', conflict ? 'bg-red-500' : capacityPreview.after === capacityPreview.cap ? 'bg-emerald-500' : 'bg-primary')}
+                  className={cn('h-full rounded-full transition-all', conflict ? 'bg-amber-500' : capacityPreview.after === capacityPreview.cap ? 'bg-emerald-500' : 'bg-primary')}
                   style={{ width: `${Math.min(100, capacityPreview.cap ? (capacityPreview.after / capacityPreview.cap) * 100 : 100)}%` }}
                 />
               </div>
-              <p className="mt-1.5">{conflict ? describeConflict(conflict) : `${formatPoints(capacityPreview.cap - capacityPreview.after)} SP will remain.`}</p>
+              <p className="mt-1.5">{conflict ? `Over capacity — you can still save. ${describeConflict(conflict)}` : `${formatPoints(capacityPreview.cap - capacityPreview.after)} SP will remain.`}</p>
             </div>
           )}
           {currentSprint && !isClosedSprint && (!draft.assigneeId || effective.points === null) && (

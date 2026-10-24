@@ -83,7 +83,7 @@ describe('planning flow through the store', () => {
     if (!t.ok) return;
 
     store.updateTicket(t.value.id, { assigneeId: a.id, points: 3 });
-    expect(used(store, a.id).used).toBe(0); // still backlog
+    expect(used(store, a.id).used).toBe(0); // created without a sprint, so it's in the backlog
 
     store.updateTicket(t.value.id, { sprintId: active.id });
     expect(used(store, a.id).used).toBe(3);
@@ -99,16 +99,33 @@ describe('planning flow through the store', () => {
     expect(used(store, b.id).used).toBe(0);
   });
 
-  it('rejects over-capacity assignments with an explanation and leaves data unchanged', async () => {
+  it('allows going over capacity and returns a warning', async () => {
     const { store, project, a } = await emptyStore();
     const active = store.activeSprint!;
-    store.createTicket({ projectId: project.id, title: 'Big', assigneeId: a.id, points: 8, sprintId: active.id });
+    const first = store.createTicket({ projectId: project.id, title: 'Big', assigneeId: a.id, points: 8, sprintId: active.id });
+    expect(first.ok && first.warning).toBeFalsy();
     const res = store.createTicket({ projectId: project.id, title: 'Too much', assigneeId: a.id, points: 3, sprintId: active.id });
-    expect(res.ok).toBe(false);
-    if (res.ok) return;
-    expect(res.error).toContain('2 SP remaining');
-    expect(res.conflicts?.[0].remaining).toBe(2);
-    expect(store.data.tickets).toHaveLength(1);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.warning).toBe('Engineer A is now at 11 / 10 SP in Sprint 1, 1 SP over capacity.');
+    expect(store.data.tickets).toHaveLength(2);
+    expect(used(store, a.id)).toMatchObject({ used: 11, remaining: -1, state: 'over' });
+
+    // Edits that don't add SP on top of an over allocation don't warn again.
+    const shrink = store.updateTicket(res.value.id, { points: 2 });
+    expect(shrink.ok && shrink.warning).toBeFalsy();
+  });
+
+  it('duplicates into the same open sprint', async () => {
+    const { store, project, a } = await emptyStore();
+    const active = store.activeSprint!;
+    const t = store.createTicket({ projectId: project.id, title: 'Work', assigneeId: a.id, points: 6, sprintId: active.id });
+    if (!t.ok) throw new Error(t.error);
+    const copy = store.duplicateTicket(t.value.id);
+    expect(copy.ok).toBe(true);
+    if (!copy.ok) return;
+    expect(copy.value.sprintId).toBe(active.id);
+    expect(copy.warning).toContain('2 SP over capacity');
   });
 
   it('future sprint planning does not change active capacity', async () => {
@@ -123,7 +140,6 @@ describe('planning flow through the store', () => {
     const active = store.activeSprint!;
     expect(store.updateSprint(active.id, { capacities: { [a.id]: 6 } }).ok).toBe(true);
     expect(used(store, a.id).capacity).toBe(6);
-    expect(store.createTicket({ projectId: project.id, title: 'x', assigneeId: a.id, points: 7, sprintId: active.id }).ok).toBe(false);
     store.createTicket({ projectId: project.id, title: 'y', assigneeId: a.id, points: 5, sprintId: active.id });
     expect(store.updateSprint(active.id, { capacities: { [a.id]: 4 } }).ok).toBe(false);
     expect(store.updateSprint(active.id, { capacities: { [a.id]: 12 } }).ok).toBe(false);

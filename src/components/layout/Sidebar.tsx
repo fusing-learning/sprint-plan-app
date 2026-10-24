@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Archive, CalendarCheck2, CalendarClock, Database, HardDrive, History, Inbox, Layers, PanelLeftClose, Search, UserX, Users } from 'lucide-react';
+import { Archive, CalendarCheck2, CalendarClock, CircleDashed, Database, HardDrive, History, Inbox, PanelLeftClose, Search, UserX, Users } from 'lucide-react';
 import { formatPoints, memberAllocation, memberCapacityFor } from '@/domain/capacity';
 import { useData, useUi, usePlanningSprint, type ScopeFilter, type ViewMode } from '@/state/react';
 import { isOnBoard, sortedMembers, sortedSections } from '@/state/selectors';
@@ -26,6 +26,7 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
   const closed = closedIds.size;
   const archived = data.projects.filter((p) => p.lifecycle === 'archived').length;
   const planningMode = ui.mode !== 'history';
+  const sprintTickets = planning ? boardTickets.filter((t) => t.sprintId === planning.id) : [];
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -47,7 +48,7 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
   const setScope = (scope: ScopeFilter) =>
     go(() => {
       if (ui.mode === 'history') ui.setMode('active');
-      ui.setFilters({ scope, showArchived: false });
+      ui.setFilters({ scope, gap: 'none', showArchived: false });
     });
   const setAssignee = (assignee: string) =>
     go(() => {
@@ -101,15 +102,25 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
         </Group>
 
         <Group title="Show">
-          <NavItem icon={<Layers />} label="All tasks" count={boardTickets.length} active={planningMode && ui.filters.scope === 'all' && !ui.filters.showArchived} onClick={setScope('all')} />
           <NavItem
             icon={<CalendarCheck2 />}
             label={planning ? `In ${planning.name}` : 'In sprint'}
-            count={planning ? boardTickets.filter((t) => t.sprintId === planning.id).length : 0}
-            active={planningMode && ui.filters.scope === 'sprint' && !ui.filters.showArchived}
+            count={sprintTickets.length}
+            active={planningMode && ui.filters.scope === 'sprint' && ui.filters.gap === 'none' && !ui.filters.showArchived}
             onClick={setScope('sprint')}
           />
           <NavItem icon={<Inbox />} label="Backlog" count={boardTickets.filter((t) => t.sprintId === null).length} active={planningMode && ui.filters.scope === 'backlog' && !ui.filters.showArchived} onClick={setScope('backlog')} />
+          <NavItem
+            icon={<CircleDashed />}
+            label="Incomplete planning"
+            count={sprintTickets.filter((t) => t.assigneeId === null || t.points === null).length}
+            active={planningMode && ui.filters.gap === 'incomplete'}
+            onClick={go(() => {
+              if (ui.mode === 'history') ui.setMode('active');
+              const on = ui.filters.gap === 'incomplete';
+              ui.setFilters({ gap: on ? 'none' : 'incomplete', scope: 'sprint', showArchived: false });
+            })}
+          />
           <NavItem
             icon={<Archive />}
             label="Archived projects"
@@ -140,7 +151,7 @@ export function Sidebar({ onTeam, onData, onNavigate, showCollapse = true }: Pro
           <NavItem
             icon={<UserX />}
             label="Unassigned"
-            count={boardTickets.filter((t) => t.assigneeId === null).length}
+            count={(ui.filters.scope === 'backlog' ? boardTickets.filter((t) => t.sprintId === null) : sprintTickets).filter((t) => t.assigneeId === null).length}
             active={planningMode && ui.filters.assignee === 'unassigned'}
             onClick={setAssignee('unassigned')}
           />

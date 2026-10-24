@@ -33,14 +33,16 @@ export function report<T>(result: OpResult<T>, success?: string): result is Extr
   }
   const message = success ?? result.message;
   if (message) toast.success(message);
+  if (result.warning) toast.warning('Over capacity', { description: result.warning, duration: 8000 });
   return true;
 }
 
 // ----------------------------------------------------------------- UI state
 
 export type ViewMode = 'active' | 'future' | 'history';
-export type ScopeFilter = 'all' | 'sprint' | 'backlog';
-export type GapFilter = 'none' | 'unassigned' | 'unestimated';
+/** The board shows the sprint being planned, or the backlog. Other sprints' tasks appear when that sprint is selected. */
+export type ScopeFilter = 'sprint' | 'backlog';
+export type GapFilter = 'none' | 'unassigned' | 'unestimated' | 'incomplete';
 
 export interface Filters {
   scope: ScopeFilter;
@@ -51,7 +53,7 @@ export interface Filters {
 }
 
 export const DEFAULT_FILTERS: Filters = {
-  scope: 'all',
+  scope: 'sprint',
   assignee: 'all',
   gap: 'none',
   showArchived: false,
@@ -116,7 +118,9 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
   const [search, setSearch] = React.useState('');
   const [filters, setFiltersRaw] = React.useState<Filters>(() => {
     const saved = readLocal<Partial<Filters>>('sf.filters', {});
-    return { scope: saved.scope ?? 'all', assignee: saved.assignee ?? 'all', gap: saved.gap ?? 'none', showArchived: saved.showArchived ?? false };
+    // 'all' was a scope before tasks defaulted to the sprint; it now means the sprint view.
+    const scope: ScopeFilter = saved.scope === 'backlog' ? 'backlog' : 'sprint';
+    return { scope, assignee: saved.assignee ?? 'all', gap: saved.gap ?? 'none', showArchived: saved.showArchived ?? false };
   });
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState<boolean>(() => readLocal('sf.sidebarCollapsed', false));
   const [allocationView, setAllocationView] = React.useState<AllocationView>(() => readLocal('sf.allocationView', 'priority'));

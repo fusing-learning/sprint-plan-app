@@ -28,7 +28,8 @@ import {
 import { newId } from '@/lib/utils';
 
 export type OpResult<T = undefined> =
-  | { ok: true; value: T; message?: string }
+  /** `warning` reports something allowed but worth knowing, such as going over capacity. */
+  | { ok: true; value: T; message?: string; warning?: string }
   | { ok: false; error: string; conflicts?: CapacityConflict[] };
 
 const ok = <T>(value: T, message?: string): OpResult<T> => ({ ok: true, value, message });
@@ -60,8 +61,9 @@ export type SprintInput = Pick<Sprint, 'name' | 'startDate' | 'endDate'> & Parti
 /**
  * Application service + state container.
  *
- * - Every operation validates business rules (capacity, sprint rules) against
+ * - Every operation validates business rules (sprint rules, valid fields) against
  *   the current in-memory data and returns an OpResult. Nothing is silently ignored.
+ *   Going over a person's capacity is allowed and reported as a warning.
  * - Accepted changes update in-memory state immediately (instant UI feedback),
  *   then are persisted through the repository in a serialized write queue.
  * - The store knows nothing about React or IndexedDB.
@@ -355,8 +357,7 @@ export class PlanningStore {
       }
     }
     const conflict = findCapacityConflict(this.data, proposed);
-    if (conflict) return fail(describeConflict(conflict), [conflict]);
-    return ok(proposed);
+    return conflict ? { ok: true, value: proposed, warning: overCapacityWarning(conflict) } : ok(proposed);
   }
 
   createTicket(input: TicketInput): OpResult<Ticket> {
@@ -380,7 +381,7 @@ export class PlanningStore {
     const valid = this.validateTicket(ticket);
     if (!valid.ok) return valid;
     this.commit({ put: { tickets: [ticket], meta: { ...meta, nextTicketNumber: meta.nextTicketNumber + 1 } } });
-    return ok(ticket);
+    return valid;
   }
 
   updateTicket(id: ID, patch: TicketPatch): OpResult<Ticket> {
@@ -394,7 +395,7 @@ export class PlanningStore {
     const valid = this.validateTicket(next, existing);
     if (!valid.ok) return valid;
     this.commit({ put: { tickets: [next] } });
-    return ok(next);
+    return valid;
   }
 
   /** Check a proposed edit without applying it (used for live previews in forms). */
@@ -403,7 +404,7 @@ export class PlanningStore {
     return findCapacityConflict(this.data, proposed);
   }
 
-  /** Duplicate into the backlog right after the original, so capacity is never consumed by surprise. */
+  /** Duplicate right after the original, in the same open sprint (closed sprints are history, so those go to the backlog). */
   duplicateTicket(id: ID): OpResult<Ticket> {
     const existing = this.ticket(id);
     if (!existing) return fail('Ticket not found.');
@@ -417,14 +418,15 @@ export class PlanningStore {
       id: newId('tkt'),
       key: `${meta.ticketKeyPrefix}-${meta.nextTicketNumber}`,
       title: `${existing.title} (copy)`,
-      sprintId: null,
+      sprintId: this.sprint(existing.sprintId ?? '')?.status === 'closed' ? null : existing.sprintId,
       order: existing.order + 1,
       external: {},
       createdAt: ts,
       updatedAt: ts,
     };
+    const conflict = findCapacityConflict(this.data, copy);
     this.commit({ put: { tickets: [...shifted, copy], meta: { ...meta, nextTicketNumber: meta.nextTicketNumber + 1 } } });
-    return ok(copy, 'Duplicate added to the backlog.');
+    return { ok: true, value: copy, message: copy.sprintId ? undefined : 'Duplicate added to the backlog.', warning: conflict ? overCapacityWarning(conflict) : undefined };
   }
 
   deleteTicket(id: ID): OpResult {
@@ -590,6 +592,11 @@ export class PlanningStore {
     });
     return ok(undefined);
   }
+}
+
+function overCapacityWarning(c: CapacityConflict): string {
+  const after = formatPoints(c.allocatedElsewhere + c.requested);
+  return `${c.memberName} is now at ${after} / ${formatPoints(c.capacity)} SP in ${c.sprintName}, ${formatPoints(c.overBy)} SP over capacity.`;
 }
 
 function normalizeCapacities(capacities: Record<ID, number>, members: Member[]): Record<ID, number> {
